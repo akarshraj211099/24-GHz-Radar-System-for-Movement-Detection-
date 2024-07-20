@@ -1,0 +1,1913 @@
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"cfar.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.global	__aeabi_i2d
+  20              		.global	__aeabi_ddiv
+  21              		.global	__aeabi_f2d
+  22              		.global	__aeabi_dsub
+  23              		.global	__aeabi_dmul
+  24              		.global	__aeabi_d2f
+  25              		.global	__aeabi_i2f
+  26              		.global	__aeabi_fmul
+  27              		.global	__aeabi_fadd
+  28              		.global	__aeabi_fcmplt
+  29              		.section	.text.CFAR,"ax",%progbits
+  30              		.align	2
+  31              		.global	CFAR
+  32              		.thumb
+  33              		.thumb_func
+  34              		.type	CFAR, %function
+  35              	CFAR:
+  36              	.LFB63:
+  37              		.file 1 "sources\\asw\\cfar.c"
+   1:sources\asw/cfar.c **** /**
+   2:sources\asw/cfar.c ****  * @file cfar.c
+   3:sources\asw/cfar.c ****  * @brief CA-CFAR implementation file.
+   4:sources\asw/cfar.c ****  * This file contains the implementations of the CA-CFAR.
+   5:sources\asw/cfar.c ****  */
+   6:sources\asw/cfar.c **** 
+   7:sources\asw/cfar.c **** #include "cfar.h"
+   8:sources\asw/cfar.c **** #include "project.h"
+   9:sources\asw/cfar.c **** 
+  10:sources\asw/cfar.c **** #include <string.h>
+  11:sources\asw/cfar.c **** #include <math.h>
+  12:sources\asw/cfar.c **** 
+  13:sources\asw/cfar.c **** /**
+  14:sources\asw/cfar.c ****  * @brief CFAR (Constant False Alarm Rate) detection function.
+  15:sources\asw/cfar.c ****  * 
+  16:sources\asw/cfar.c ****  * This function performs CFAR detection on the provided FFT array. 
+  17:sources\asw/cfar.c ****  * CFAR is a widely used technique in radar signal processing to detect targets by 
+  18:sources\asw/cfar.c ****  * adjusting the detection threshold according to the noise level.
+  19:sources\asw/cfar.c ****  *
+  20:sources\asw/cfar.c ****  * @param FFT_Array Pointer to the FFT data array (interleaved real and imaginary parts).
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 2
+
+
+  21:sources\asw/cfar.c ****  * @param params Pointer to the FFT_CFAR_t structure containing the parameters for CFAR processing.
+  22:sources\asw/cfar.c ****  * 
+  23:sources\asw/cfar.c ****  * The FFT_CFAR_t structure should include the following fields:
+  24:sources\asw/cfar.c ****  * - N: Number of points in the FFT array.
+  25:sources\asw/cfar.c ****  * - NR: Number of reference cells used to estimate the noise level.
+  26:sources\asw/cfar.c ****  * - NG: Number of guard cells around the cell under test (CUT).
+  27:sources\asw/cfar.c ****  * - PFA: Desired probability of false alarm.
+  28:sources\asw/cfar.c ****  * - threshold_m: Array to store the computed threshold values.
+  29:sources\asw/cfar.c ****  * - detections: Array to store the detection results (1 for detection, 0 for no detection).
+  30:sources\asw/cfar.c ****  * - CFAR_filled: Counter for the number of detections.
+  31:sources\asw/cfar.c ****  * 
+  32:sources\asw/cfar.c ****  * This function will modify the 'threshold_m' and 'detections' arrays within the params structure.
+  33:sources\asw/cfar.c ****  * The FFT_Array is assumed to be of size 5*N (real and imaginary parts interleaved).
+  34:sources\asw/cfar.c ****  * The function will also zero out the first element of the fft_magnitude array for noise estimatio
+  35:sources\asw/cfar.c ****  *
+  36:sources\asw/cfar.c ****  * @return void
+  37:sources\asw/cfar.c ****  */
+  38:sources\asw/cfar.c **** 
+  39:sources\asw/cfar.c **** void CFAR(int32 *FFT_Array, FFT_CFAR_t *params) 
+  40:sources\asw/cfar.c **** {
+  38              		.loc 1 40 0
+  39              		.cfi_startproc
+  40              		@ args = 0, pretend = 0, frame = 8
+  41              		@ frame_needed = 1, uses_anonymous_args = 0
+  42              	.LVL0:
+  43 0000 2DE9F04F 		push	{r4, r5, r6, r7, r8, r9, r10, fp, lr}
+  44              		.cfi_def_cfa_offset 36
+  45              		.cfi_offset 4, -36
+  46              		.cfi_offset 5, -32
+  47              		.cfi_offset 6, -28
+  48              		.cfi_offset 7, -24
+  49              		.cfi_offset 8, -20
+  50              		.cfi_offset 9, -16
+  51              		.cfi_offset 10, -12
+  52              		.cfi_offset 11, -8
+  53              		.cfi_offset 14, -4
+  54 0004 83B0     		sub	sp, sp, #12
+  55              		.cfi_def_cfa_offset 48
+  56 0006 00AF     		add	r7, sp, #0
+  57              		.cfi_def_cfa_register 7
+  58 0008 0446     		mov	r4, r0
+  59 000a 8B46     		mov	fp, r1
+  41:sources\asw/cfar.c ****     int i, j;
+  42:sources\asw/cfar.c ****     float noise_level_m;
+  43:sources\asw/cfar.c ****     float alpha = params->NR * (pow(params->PFA, -1.0 / params->NR) - 1);
+  60              		.loc 1 43 0
+  61 000c D1F80CA0 		ldr	r10, [r1, #12]	@ float
+  62 0010 4868     		ldr	r0, [r1, #4]
+  63              	.LVL1:
+  64 0012 FFF7FEFF 		bl	__aeabi_i2d
+  65              	.LVL2:
+  66 0016 8046     		mov	r8, r0
+  67 0018 8946     		mov	r9, r1
+  68 001a 0246     		mov	r2, r0
+  69 001c 0B46     		mov	r3, r1
+  70 001e 0020     		movs	r0, #0
+  71 0020 5949     		ldr	r1, .L16
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 3
+
+
+  72 0022 FFF7FEFF 		bl	__aeabi_ddiv
+  73              	.LVL3:
+  74 0026 0546     		mov	r5, r0
+  75 0028 0E46     		mov	r6, r1
+  76 002a 5046     		mov	r0, r10
+  77 002c FFF7FEFF 		bl	__aeabi_f2d
+  78              	.LVL4:
+  79 0030 2A46     		mov	r2, r5
+  80 0032 3346     		mov	r3, r6
+  81 0034 FFF7FEFF 		bl	pow
+  82              	.LVL5:
+  83 0038 0022     		movs	r2, #0
+  84 003a 544B     		ldr	r3, .L16+4
+  85 003c FFF7FEFF 		bl	__aeabi_dsub
+  86              	.LVL6:
+  87 0040 0246     		mov	r2, r0
+  88 0042 0B46     		mov	r3, r1
+  89 0044 4046     		mov	r0, r8
+  90 0046 4946     		mov	r1, r9
+  91 0048 FFF7FEFF 		bl	__aeabi_dmul
+  92              	.LVL7:
+  93 004c FFF7FEFF 		bl	__aeabi_d2f
+  94              	.LVL8:
+  95 0050 7860     		str	r0, [r7, #4]	@ float
+  96              	.LVL9:
+  44:sources\asw/cfar.c ****     float fft_magnitude[params->N];
+  97              		.loc 1 44 0
+  98 0052 DBF80020 		ldr	r2, [fp]
+  99              	.LVL10:
+ 100 0056 9200     		lsls	r2, r2, #2
+ 101              	.LVL11:
+ 102 0058 02F10A03 		add	r3, r2, #10
+ 103 005c 23F00703 		bic	r3, r3, #7
+ 104 0060 ADEB030D 		sub	sp, sp, r3
+ 105 0064 6E46     		mov	r6, sp
+ 106              	.LVL12:
+  45:sources\asw/cfar.c **** 
+  46:sources\asw/cfar.c ****     memset(fft_magnitude, 0, sizeof(fft_magnitude)); // Clear fft_magnitude array
+ 107              		.loc 1 46 0
+ 108 0066 0021     		movs	r1, #0
+ 109 0068 6846     		mov	r0, sp
+ 110              	.LVL13:
+ 111 006a FFF7FEFF 		bl	memset
+ 112              	.LVL14:
+  47:sources\asw/cfar.c **** 
+  48:sources\asw/cfar.c ****     // Compute FFT magnitudes
+  49:sources\asw/cfar.c ****     for (i = 0; i < params->N; i++)
+ 113              		.loc 1 49 0
+ 114 006e 0025     		movs	r5, #0
+ 115 0070 1CE0     		b	.L2
+ 116              	.LVL15:
+ 117              	.L3:
+ 118              	.LBB2:
+  50:sources\asw/cfar.c ****     {
+  51:sources\asw/cfar.c ****         float real = (float)FFT_Array[2 * i];
+ 119              		.loc 1 51 0 discriminator 3
+ 120 0072 4FEAC508 		lsl	r8, r5, #3
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 4
+
+
+ 121 0076 54F83500 		ldr	r0, [r4, r5, lsl #3]
+ 122 007a FFF7FEFF 		bl	__aeabi_i2f
+ 123              	.LVL16:
+ 124 007e 8146     		mov	r9, r0
+ 125              	.LVL17:
+  52:sources\asw/cfar.c ****         float imag = (float)FFT_Array[2 * i + 1];
+ 126              		.loc 1 52 0 discriminator 3
+ 127 0080 A044     		add	r8, r8, r4
+ 128 0082 D8F80400 		ldr	r0, [r8, #4]
+ 129              	.LVL18:
+ 130 0086 FFF7FEFF 		bl	__aeabi_i2f
+ 131              	.LVL19:
+ 132 008a 8046     		mov	r8, r0
+ 133              	.LVL20:
+  53:sources\asw/cfar.c ****         fft_magnitude[i] = real * real + imag * imag; // Compute power spectrum
+ 134              		.loc 1 53 0 discriminator 3
+ 135 008c 4946     		mov	r1, r9
+ 136 008e 4846     		mov	r0, r9
+ 137              	.LVL21:
+ 138 0090 FFF7FEFF 		bl	__aeabi_fmul
+ 139              	.LVL22:
+ 140 0094 8146     		mov	r9, r0
+ 141              	.LVL23:
+ 142 0096 4146     		mov	r1, r8
+ 143 0098 4046     		mov	r0, r8
+ 144 009a FFF7FEFF 		bl	__aeabi_fmul
+ 145              	.LVL24:
+ 146 009e 0146     		mov	r1, r0
+ 147 00a0 4846     		mov	r0, r9
+ 148 00a2 FFF7FEFF 		bl	__aeabi_fadd
+ 149              	.LVL25:
+ 150 00a6 46F82500 		str	r0, [r6, r5, lsl #2]	@ float
+ 151              	.LBE2:
+  49:sources\asw/cfar.c ****     {
+ 152              		.loc 1 49 0 discriminator 3
+ 153 00aa 0135     		adds	r5, r5, #1
+ 154              	.LVL26:
+ 155              	.L2:
+  49:sources\asw/cfar.c ****     {
+ 156              		.loc 1 49 0 is_stmt 0 discriminator 1
+ 157 00ac DBF80030 		ldr	r3, [fp]
+ 158 00b0 9D42     		cmp	r5, r3
+ 159 00b2 DEDB     		blt	.L3
+  54:sources\asw/cfar.c ****     }
+  55:sources\asw/cfar.c ****     
+  56:sources\asw/cfar.c ****     fft_magnitude[0] = 0;
+ 160              		.loc 1 56 0 is_stmt 1
+ 161 00b4 0023     		movs	r3, #0
+ 162 00b6 3360     		str	r3, [r6]	@ float
+  57:sources\asw/cfar.c **** 
+  58:sources\asw/cfar.c ****     for (i = params->NR + params->NG; i < params->N - params->NR - params->NG; i++)
+ 163              		.loc 1 58 0
+ 164 00b8 DBF80420 		ldr	r2, [fp, #4]
+ 165 00bc DBF80830 		ldr	r3, [fp, #8]
+ 166 00c0 02EB030A 		add	r10, r2, r3
+ 167              	.LVL27:
+ 168 00c4 50E0     		b	.L4
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 5
+
+
+ 169              	.LVL28:
+ 170              	.L12:
+  59:sources\asw/cfar.c ****     {
+  60:sources\asw/cfar.c ****         noise_level_m = 0;
+  61:sources\asw/cfar.c **** 
+  62:sources\asw/cfar.c ****         // Sum over the left reference cells
+  63:sources\asw/cfar.c ****         for (j = i - params->NR - params->NG; j < i - params->NG; j++)
+ 171              		.loc 1 63 0
+ 172 00c6 C8EB0A04 		rsb	r4, r8, r10
+ 173 00ca C9EB0404 		rsb	r4, r9, r4
+ 174              	.LVL29:
+  60:sources\asw/cfar.c **** 
+ 175              		.loc 1 60 0
+ 176 00ce 0025     		movs	r5, #0
+ 177              		.loc 1 63 0
+ 178 00d0 06E0     		b	.L5
+ 179              	.LVL30:
+ 180              	.L6:
+  64:sources\asw/cfar.c ****         {
+  65:sources\asw/cfar.c ****             noise_level_m += fft_magnitude[j];
+ 181              		.loc 1 65 0 discriminator 3
+ 182 00d2 56F82410 		ldr	r1, [r6, r4, lsl #2]	@ float
+ 183 00d6 2846     		mov	r0, r5
+ 184 00d8 FFF7FEFF 		bl	__aeabi_fadd
+ 185              	.LVL31:
+ 186 00dc 0546     		mov	r5, r0
+ 187              	.LVL32:
+  63:sources\asw/cfar.c ****         {
+ 188              		.loc 1 63 0 discriminator 3
+ 189 00de 0134     		adds	r4, r4, #1
+ 190              	.LVL33:
+ 191              	.L5:
+  63:sources\asw/cfar.c ****         {
+ 192              		.loc 1 63 0 is_stmt 0 discriminator 1
+ 193 00e0 C9EB0A03 		rsb	r3, r9, r10
+ 194 00e4 9C42     		cmp	r4, r3
+ 195 00e6 F4DB     		blt	.L6
+  66:sources\asw/cfar.c ****         }
+  67:sources\asw/cfar.c **** 
+  68:sources\asw/cfar.c ****         // Sum over the right reference cells
+  69:sources\asw/cfar.c ****         for (j = i + params->NG + 1; j <= i + params->NG + params->NR; j++)
+ 196              		.loc 1 69 0 is_stmt 1
+ 197 00e8 D144     		add	r9, r9, r10
+ 198 00ea 09F10104 		add	r4, r9, #1
+ 199              	.LVL34:
+ 200 00ee 06E0     		b	.L7
+ 201              	.L8:
+  70:sources\asw/cfar.c ****         {
+  71:sources\asw/cfar.c ****             noise_level_m += fft_magnitude[j];
+ 202              		.loc 1 71 0 discriminator 3
+ 203 00f0 56F82410 		ldr	r1, [r6, r4, lsl #2]	@ float
+ 204 00f4 2846     		mov	r0, r5
+ 205 00f6 FFF7FEFF 		bl	__aeabi_fadd
+ 206              	.LVL35:
+ 207 00fa 0546     		mov	r5, r0
+ 208              	.LVL36:
+  69:sources\asw/cfar.c ****         {
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 6
+
+
+ 209              		.loc 1 69 0 discriminator 3
+ 210 00fc 0134     		adds	r4, r4, #1
+ 211              	.LVL37:
+ 212              	.L7:
+  69:sources\asw/cfar.c ****         {
+ 213              		.loc 1 69 0 is_stmt 0 discriminator 1
+ 214 00fe 08EB0903 		add	r3, r8, r9
+ 215 0102 9C42     		cmp	r4, r3
+ 216 0104 F4DD     		ble	.L8
+  72:sources\asw/cfar.c ****         }
+  73:sources\asw/cfar.c **** 
+  74:sources\asw/cfar.c ****         noise_level_m /= (5.0 * params->NR); // Average noise level
+ 217              		.loc 1 74 0 is_stmt 1
+ 218 0106 4046     		mov	r0, r8
+ 219 0108 FFF7FEFF 		bl	__aeabi_i2d
+ 220              	.LVL38:
+ 221 010c 0022     		movs	r2, #0
+ 222 010e 204B     		ldr	r3, .L16+8
+ 223 0110 FFF7FEFF 		bl	__aeabi_dmul
+ 224              	.LVL39:
+ 225 0114 8046     		mov	r8, r0
+ 226 0116 8946     		mov	r9, r1
+ 227 0118 2846     		mov	r0, r5
+ 228 011a FFF7FEFF 		bl	__aeabi_f2d
+ 229              	.LVL40:
+ 230 011e 4246     		mov	r2, r8
+ 231 0120 4B46     		mov	r3, r9
+ 232 0122 FFF7FEFF 		bl	__aeabi_ddiv
+ 233              	.LVL41:
+ 234 0126 FFF7FEFF 		bl	__aeabi_d2f
+ 235              	.LVL42:
+  75:sources\asw/cfar.c **** 
+  76:sources\asw/cfar.c ****         // Compute Threshold
+  77:sources\asw/cfar.c ****         params->threshold_m[i] = alpha * noise_level_m;
+ 236              		.loc 1 77 0
+ 237 012a 0146     		mov	r1, r0
+ 238 012c 7868     		ldr	r0, [r7, #4]	@ float
+ 239              	.LVL43:
+ 240 012e FFF7FEFF 		bl	__aeabi_fmul
+ 241              	.LVL44:
+ 242 0132 0AF58273 		add	r3, r10, #260
+ 243 0136 4BF82300 		str	r0, [fp, r3, lsl #2]	@ float
+  78:sources\asw/cfar.c ****     
+  79:sources\asw/cfar.c ****         // Apply Threshold to the CUT (Cell Under Test)
+  80:sources\asw/cfar.c ****         if (fft_magnitude[i] > params->threshold_m[i])
+ 244              		.loc 1 80 0
+ 245 013a 56F82A10 		ldr	r1, [r6, r10, lsl #2]	@ float
+ 246 013e FFF7FEFF 		bl	__aeabi_fcmplt
+ 247              	.LVL45:
+ 248 0142 58B1     		cbz	r0, .L14
+  81:sources\asw/cfar.c ****         {
+  82:sources\asw/cfar.c ****             params->detections[i] = 1;
+ 249              		.loc 1 82 0
+ 250 0144 0BEB0A03 		add	r3, fp, r10
+ 251 0148 0122     		movs	r2, #1
+ 252 014a 1A74     		strb	r2, [r3, #16]
+  83:sources\asw/cfar.c ****             params->CFAR_filled++;
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 7
+
+
+ 253              		.loc 1 83 0
+ 254 014c 41F21042 		movw	r2, #5136
+ 255 0150 5BF80230 		ldr	r3, [fp, r2]
+ 256 0154 0133     		adds	r3, r3, #1
+ 257 0156 4BF80230 		str	r3, [fp, r2]
+ 258 015a 03E0     		b	.L11
+ 259              	.L14:
+  84:sources\asw/cfar.c ****         }
+  85:sources\asw/cfar.c ****         else
+  86:sources\asw/cfar.c ****         {
+  87:sources\asw/cfar.c ****             params->detections[i] = 0;
+ 260              		.loc 1 87 0
+ 261 015c 0BEB0A03 		add	r3, fp, r10
+ 262 0160 0022     		movs	r2, #0
+ 263 0162 1A74     		strb	r2, [r3, #16]
+ 264              	.L11:
+  58:sources\asw/cfar.c ****     {
+ 265              		.loc 1 58 0 discriminator 2
+ 266 0164 0AF1010A 		add	r10, r10, #1
+ 267              	.LVL46:
+ 268              	.L4:
+  58:sources\asw/cfar.c ****     {
+ 269              		.loc 1 58 0 is_stmt 0 discriminator 1
+ 270 0168 DBF80030 		ldr	r3, [fp]
+ 271 016c DBF80480 		ldr	r8, [fp, #4]
+ 272 0170 C8EB0303 		rsb	r3, r8, r3
+ 273 0174 DBF80890 		ldr	r9, [fp, #8]
+ 274 0178 C9EB0303 		rsb	r3, r9, r3
+ 275 017c 9A45     		cmp	r10, r3
+ 276 017e A2DB     		blt	.L12
+  88:sources\asw/cfar.c ****         }
+  89:sources\asw/cfar.c ****     }
+  90:sources\asw/cfar.c **** }
+ 277              		.loc 1 90 0 is_stmt 1
+ 278 0180 0C37     		adds	r7, r7, #12
+ 279              		.cfi_def_cfa_offset 36
+ 280              	.LVL47:
+ 281 0182 BD46     		mov	sp, r7
+ 282              		.cfi_def_cfa_register 13
+ 283              		@ sp needed
+ 284 0184 BDE8F08F 		pop	{r4, r5, r6, r7, r8, r9, r10, fp, pc}
+ 285              	.LVL48:
+ 286              	.L17:
+ 287              		.align	2
+ 288              	.L16:
+ 289 0188 0000F0BF 		.word	-1074790400
+ 290 018c 0000F03F 		.word	1072693248
+ 291 0190 00001440 		.word	1075052544
+ 292              		.cfi_endproc
+ 293              	.LFE63:
+ 294              		.size	CFAR, .-CFAR
+ 295              		.section	.text.sendCFARData,"ax",%progbits
+ 296              		.align	2
+ 297              		.global	sendCFARData
+ 298              		.thumb
+ 299              		.thumb_func
+ 300              		.type	sendCFARData, %function
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 8
+
+
+ 301              	sendCFARData:
+ 302              	.LFB64:
+  91:sources\asw/cfar.c **** 
+  92:sources\asw/cfar.c **** /**
+  93:sources\asw/cfar.c ****  * @brief Sends CFAR (Constant False Alarm Rate) threshold and detection data via UART.
+  94:sources\asw/cfar.c ****  * 
+  95:sources\asw/cfar.c ****  * This function sends the computed CFAR threshold values and detection results over UART.
+  96:sources\asw/cfar.c ****  * It first sends the threshold values, followed by the detection results.
+  97:sources\asw/cfar.c ****  *
+  98:sources\asw/cfar.c ****  * @param params Pointer to the FFT_CFAR_t structure containing the parameters and results for CFAR
+  99:sources\asw/cfar.c ****  * 
+ 100:sources\asw/cfar.c ****  * The FFT_CFAR_t structure should include the following fields:
+ 101:sources\asw/cfar.c ****  * - N: Number of points in the FFT array.
+ 102:sources\asw/cfar.c ****  * - threshold_m: Array containing the computed threshold values.
+ 103:sources\asw/cfar.c ****  * - detections: Array containing the detection results (1 for detection, 0 for no detection).
+ 104:sources\asw/cfar.c ****  * 
+ 105:sources\asw/cfar.c ****  * This function will send each float value in the threshold_m array as a sequence of bytes.
+ 106:sources\asw/cfar.c ****  * Each detection result will be sent as a single byte.
+ 107:sources\asw/cfar.c ****  * The UART_LOG_PutChar function is assumed to be defined elsewhere for UART communication.
+ 108:sources\asw/cfar.c ****  *
+ 109:sources\asw/cfar.c ****  * @return void
+ 110:sources\asw/cfar.c ****  */
+ 111:sources\asw/cfar.c **** void sendCFARData(FFT_CFAR_t *params)
+ 112:sources\asw/cfar.c **** {
+ 303              		.loc 1 112 0
+ 304              		.cfi_startproc
+ 305              		@ args = 0, pretend = 0, frame = 16
+ 306              		@ frame_needed = 0, uses_anonymous_args = 0
+ 307              	.LVL49:
+ 308 0000 70B5     		push	{r4, r5, r6, lr}
+ 309              		.cfi_def_cfa_offset 16
+ 310              		.cfi_offset 4, -16
+ 311              		.cfi_offset 5, -12
+ 312              		.cfi_offset 6, -8
+ 313              		.cfi_offset 14, -4
+ 314 0002 84B0     		sub	sp, sp, #16
+ 315              		.cfi_def_cfa_offset 32
+ 316 0004 0546     		mov	r5, r0
+ 317              	.LVL50:
+ 318              	.LBB3:
+ 113:sources\asw/cfar.c ****     // Send CFAR threshold data    
+ 114:sources\asw/cfar.c ****     for (int32_t i = 0; i < params->N; i++)
+ 319              		.loc 1 114 0
+ 320 0006 0026     		movs	r6, #0
+ 321 0008 13E0     		b	.L19
+ 322              	.LVL51:
+ 323              	.L22:
+ 324              	.LBB4:
+ 115:sources\asw/cfar.c ****     {
+ 116:sources\asw/cfar.c ****         float value = params->threshold_m[i];
+ 325              		.loc 1 116 0
+ 326 000a 06F58273 		add	r3, r6, #260
+ 327 000e 55F82330 		ldr	r3, [r5, r3, lsl #2]	@ float
+ 328              	.LVL52:
+ 117:sources\asw/cfar.c ****         uint8_t bytes[sizeof(float)];
+ 118:sources\asw/cfar.c ****         
+ 119:sources\asw/cfar.c ****         memcpy(bytes, &value, sizeof(float)); // Copy float bytes to byte array
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 9
+
+
+ 329              		.loc 1 119 0
+ 330 0012 0193     		str	r3, [sp, #4]	@ float
+ 331 0014 019B     		ldr	r3, [sp, #4]
+ 332              	.LVL53:
+ 333 0016 0393     		str	r3, [sp, #12]
+ 334              	.LVL54:
+ 335              	.LBB5:
+ 120:sources\asw/cfar.c **** 
+ 121:sources\asw/cfar.c ****         for (uint8 b = 0; b < sizeof(float); b++)
+ 336              		.loc 1 121 0
+ 337 0018 0024     		movs	r4, #0
+ 338 001a 07E0     		b	.L20
+ 339              	.LVL55:
+ 340              	.L21:
+ 122:sources\asw/cfar.c ****         {
+ 123:sources\asw/cfar.c ****             UART_LOG_PutChar(bytes[b]);
+ 341              		.loc 1 123 0 discriminator 3
+ 342 001c 04AB     		add	r3, sp, #16
+ 343 001e 2344     		add	r3, r3, r4
+ 344 0020 13F8040C 		ldrb	r0, [r3, #-4]	@ zero_extendqisi2
+ 345 0024 FFF7FEFF 		bl	UART_LOG_PutChar
+ 346              	.LVL56:
+ 121:sources\asw/cfar.c ****         {
+ 347              		.loc 1 121 0 discriminator 3
+ 348 0028 0134     		adds	r4, r4, #1
+ 349              	.LVL57:
+ 350 002a E4B2     		uxtb	r4, r4
+ 351              	.LVL58:
+ 352              	.L20:
+ 121:sources\asw/cfar.c ****         {
+ 353              		.loc 1 121 0 is_stmt 0 discriminator 1
+ 354 002c 032C     		cmp	r4, #3
+ 355 002e F5D9     		bls	.L21
+ 356              	.LBE5:
+ 357              	.LBE4:
+ 114:sources\asw/cfar.c ****     {
+ 358              		.loc 1 114 0 is_stmt 1 discriminator 2
+ 359 0030 0136     		adds	r6, r6, #1
+ 360              	.LVL59:
+ 361              	.L19:
+ 114:sources\asw/cfar.c ****     {
+ 362              		.loc 1 114 0 is_stmt 0 discriminator 1
+ 363 0032 2B68     		ldr	r3, [r5]
+ 364 0034 9E42     		cmp	r6, r3
+ 365 0036 E8DB     		blt	.L22
+ 366 0038 0024     		movs	r4, #0
+ 367 003a 04E0     		b	.L23
+ 368              	.LVL60:
+ 369              	.L24:
+ 370              	.LBE3:
+ 371              	.LBB6:
+ 124:sources\asw/cfar.c ****         }
+ 125:sources\asw/cfar.c ****     }    
+ 126:sources\asw/cfar.c **** 
+ 127:sources\asw/cfar.c ****     // Send detection results
+ 128:sources\asw/cfar.c ****     for (int32_t i = 0; i < params->N; i++)
+ 129:sources\asw/cfar.c ****     {
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 10
+
+
+ 130:sources\asw/cfar.c ****         UART_LOG_PutChar(params->detections[i]);
+ 372              		.loc 1 130 0 is_stmt 1 discriminator 3
+ 373 003c 2B19     		adds	r3, r5, r4
+ 374 003e 187C     		ldrb	r0, [r3, #16]	@ zero_extendqisi2
+ 375 0040 FFF7FEFF 		bl	UART_LOG_PutChar
+ 376              	.LVL61:
+ 128:sources\asw/cfar.c ****     {
+ 377              		.loc 1 128 0 discriminator 3
+ 378 0044 0134     		adds	r4, r4, #1
+ 379              	.LVL62:
+ 380              	.L23:
+ 128:sources\asw/cfar.c ****     {
+ 381              		.loc 1 128 0 is_stmt 0 discriminator 1
+ 382 0046 2B68     		ldr	r3, [r5]
+ 383 0048 9C42     		cmp	r4, r3
+ 384 004a F7DB     		blt	.L24
+ 385              	.LBE6:
+ 131:sources\asw/cfar.c ****     }
+ 132:sources\asw/cfar.c **** }
+ 386              		.loc 1 132 0 is_stmt 1
+ 387 004c 04B0     		add	sp, sp, #16
+ 388              		.cfi_def_cfa_offset 16
+ 389              		@ sp needed
+ 390 004e 70BD     		pop	{r4, r5, r6, pc}
+ 391              		.cfi_endproc
+ 392              	.LFE64:
+ 393              		.size	sendCFARData, .-sendCFARData
+ 394              		.text
+ 395              	.Letext0:
+ 396              		.file 2 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 397              		.file 3 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 398              		.file 4 "Generated_Source\\PSoC5/cytypes.h"
+ 399              		.file 5 "sources\\asw\\cfar.h"
+ 400              		.file 6 "Generated_Source\\PSoC5/core_cm3.h"
+ 401              		.file 7 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 402              		.file 8 "Generated_Source\\PSoC5/UART_LOG.h"
+ 403              		.section	.debug_info,"",%progbits
+ 404              	.Ldebug_info0:
+ 405 0000 48030000 		.4byte	0x348
+ 406 0004 0400     		.2byte	0x4
+ 407 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 408 000a 04       		.byte	0x4
+ 409 000b 01       		.uleb128 0x1
+ 410 000c 0B010000 		.4byte	.LASF37
+ 411 0010 0C       		.byte	0xc
+ 412 0011 BE010000 		.4byte	.LASF38
+ 413 0015 7D000000 		.4byte	.LASF39
+ 414 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 415 001d 00000000 		.4byte	0
+ 416 0021 00000000 		.4byte	.Ldebug_line0
+ 417 0025 02       		.uleb128 0x2
+ 418 0026 01       		.byte	0x1
+ 419 0027 06       		.byte	0x6
+ 420 0028 84020000 		.4byte	.LASF0
+ 421 002c 03       		.uleb128 0x3
+ 422 002d 00000000 		.4byte	.LASF4
+ 423 0031 02       		.byte	0x2
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 11
+
+
+ 424 0032 1D       		.byte	0x1d
+ 425 0033 37000000 		.4byte	0x37
+ 426 0037 02       		.uleb128 0x2
+ 427 0038 01       		.byte	0x1
+ 428 0039 08       		.byte	0x8
+ 429 003a FD000000 		.4byte	.LASF1
+ 430 003e 02       		.uleb128 0x2
+ 431 003f 02       		.byte	0x2
+ 432 0040 05       		.byte	0x5
+ 433 0041 DF010000 		.4byte	.LASF2
+ 434 0045 02       		.uleb128 0x2
+ 435 0046 02       		.byte	0x2
+ 436 0047 07       		.byte	0x7
+ 437 0048 40000000 		.4byte	.LASF3
+ 438 004c 03       		.uleb128 0x3
+ 439 004d 2F000000 		.4byte	.LASF5
+ 440 0051 02       		.byte	0x2
+ 441 0052 3F       		.byte	0x3f
+ 442 0053 57000000 		.4byte	0x57
+ 443 0057 02       		.uleb128 0x2
+ 444 0058 04       		.byte	0x4
+ 445 0059 05       		.byte	0x5
+ 446 005a 64020000 		.4byte	.LASF6
+ 447 005e 02       		.uleb128 0x2
+ 448 005f 04       		.byte	0x4
+ 449 0060 07       		.byte	0x7
+ 450 0061 99010000 		.4byte	.LASF7
+ 451 0065 02       		.uleb128 0x2
+ 452 0066 08       		.byte	0x8
+ 453 0067 05       		.byte	0x5
+ 454 0068 35020000 		.4byte	.LASF8
+ 455 006c 02       		.uleb128 0x2
+ 456 006d 08       		.byte	0x8
+ 457 006e 07       		.byte	0x7
+ 458 006f 00020000 		.4byte	.LASF9
+ 459 0073 04       		.uleb128 0x4
+ 460 0074 04       		.byte	0x4
+ 461 0075 05       		.byte	0x5
+ 462 0076 696E7400 		.ascii	"int\000"
+ 463 007a 02       		.uleb128 0x2
+ 464 007b 04       		.byte	0x4
+ 465 007c 07       		.byte	0x7
+ 466 007d EE010000 		.4byte	.LASF10
+ 467 0081 03       		.uleb128 0x3
+ 468 0082 17020000 		.4byte	.LASF11
+ 469 0086 03       		.byte	0x3
+ 470 0087 18       		.byte	0x18
+ 471 0088 2C000000 		.4byte	0x2c
+ 472 008c 03       		.uleb128 0x3
+ 473 008d 6F000000 		.4byte	.LASF12
+ 474 0091 03       		.byte	0x3
+ 475 0092 2C       		.byte	0x2c
+ 476 0093 4C000000 		.4byte	0x4c
+ 477 0097 05       		.uleb128 0x5
+ 478 0098 54020000 		.4byte	.LASF13
+ 479 009c 04       		.byte	0x4
+ 480 009d E801     		.2byte	0x1e8
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 12
+
+
+ 481 009f 37000000 		.4byte	0x37
+ 482 00a3 05       		.uleb128 0x5
+ 483 00a4 AB010000 		.4byte	.LASF14
+ 484 00a8 04       		.byte	0x4
+ 485 00a9 ED01     		.2byte	0x1ed
+ 486 00ab 57000000 		.4byte	0x57
+ 487 00af 02       		.uleb128 0x2
+ 488 00b0 04       		.byte	0x4
+ 489 00b1 04       		.byte	0x4
+ 490 00b2 77000000 		.4byte	.LASF15
+ 491 00b6 02       		.uleb128 0x2
+ 492 00b7 08       		.byte	0x8
+ 493 00b8 04       		.byte	0x4
+ 494 00b9 D8010000 		.4byte	.LASF16
+ 495 00bd 02       		.uleb128 0x2
+ 496 00be 01       		.byte	0x1
+ 497 00bf 08       		.byte	0x8
+ 498 00c0 43020000 		.4byte	.LASF17
+ 499 00c4 02       		.uleb128 0x2
+ 500 00c5 08       		.byte	0x8
+ 501 00c6 04       		.byte	0x4
+ 502 00c7 78020000 		.4byte	.LASF18
+ 503 00cb 02       		.uleb128 0x2
+ 504 00cc 04       		.byte	0x4
+ 505 00cd 07       		.byte	0x7
+ 506 00ce 2C020000 		.4byte	.LASF19
+ 507 00d2 06       		.uleb128 0x6
+ 508 00d3 1414     		.2byte	0x1414
+ 509 00d5 05       		.byte	0x5
+ 510 00d6 0D       		.byte	0xd
+ 511 00d7 2E010000 		.4byte	0x12e
+ 512 00db 07       		.uleb128 0x7
+ 513 00dc 4E00     		.ascii	"N\000"
+ 514 00de 05       		.byte	0x5
+ 515 00df 0F       		.byte	0xf
+ 516 00e0 73000000 		.4byte	0x73
+ 517 00e4 00       		.byte	0
+ 518 00e5 07       		.uleb128 0x7
+ 519 00e6 4E5200   		.ascii	"NR\000"
+ 520 00e9 05       		.byte	0x5
+ 521 00ea 10       		.byte	0x10
+ 522 00eb 73000000 		.4byte	0x73
+ 523 00ef 04       		.byte	0x4
+ 524 00f0 07       		.uleb128 0x7
+ 525 00f1 4E4700   		.ascii	"NG\000"
+ 526 00f4 05       		.byte	0x5
+ 527 00f5 11       		.byte	0x11
+ 528 00f6 73000000 		.4byte	0x73
+ 529 00fa 08       		.byte	0x8
+ 530 00fb 07       		.uleb128 0x7
+ 531 00fc 50464100 		.ascii	"PFA\000"
+ 532 0100 05       		.byte	0x5
+ 533 0101 12       		.byte	0x12
+ 534 0102 AF000000 		.4byte	0xaf
+ 535 0106 0C       		.byte	0xc
+ 536 0107 08       		.uleb128 0x8
+ 537 0108 A1020000 		.4byte	.LASF20
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 13
+
+
+ 538 010c 05       		.byte	0x5
+ 539 010d 13       		.byte	0x13
+ 540 010e 2E010000 		.4byte	0x12e
+ 541 0112 10       		.byte	0x10
+ 542 0113 09       		.uleb128 0x9
+ 543 0114 48020000 		.4byte	.LASF21
+ 544 0118 05       		.byte	0x5
+ 545 0119 14       		.byte	0x14
+ 546 011a 3F010000 		.4byte	0x13f
+ 547 011e 1004     		.2byte	0x410
+ 548 0120 09       		.uleb128 0x9
+ 549 0121 63000000 		.4byte	.LASF22
+ 550 0125 05       		.byte	0x5
+ 551 0126 15       		.byte	0x15
+ 552 0127 73000000 		.4byte	0x73
+ 553 012b 1014     		.2byte	0x1410
+ 554 012d 00       		.byte	0
+ 555 012e 0A       		.uleb128 0xa
+ 556 012f 97000000 		.4byte	0x97
+ 557 0133 3F010000 		.4byte	0x13f
+ 558 0137 0B       		.uleb128 0xb
+ 559 0138 CB000000 		.4byte	0xcb
+ 560 013c FF03     		.2byte	0x3ff
+ 561 013e 00       		.byte	0
+ 562 013f 0A       		.uleb128 0xa
+ 563 0140 AF000000 		.4byte	0xaf
+ 564 0144 50010000 		.4byte	0x150
+ 565 0148 0B       		.uleb128 0xb
+ 566 0149 CB000000 		.4byte	0xcb
+ 567 014d FF03     		.2byte	0x3ff
+ 568 014f 00       		.byte	0
+ 569 0150 03       		.uleb128 0x3
+ 570 0151 53000000 		.4byte	.LASF23
+ 571 0155 05       		.byte	0x5
+ 572 0156 16       		.byte	0x16
+ 573 0157 D2000000 		.4byte	0xd2
+ 574 015b 03       		.uleb128 0x3
+ 575 015c 96020000 		.4byte	.LASF24
+ 576 0160 05       		.byte	0x5
+ 577 0161 18       		.byte	0x18
+ 578 0162 50010000 		.4byte	0x150
+ 579 0166 0C       		.uleb128 0xc
+ 580 0167 6D020000 		.4byte	.LASF32
+ 581 016b 01       		.byte	0x1
+ 582 016c 27       		.byte	0x27
+ 583 016d 00000000 		.4byte	.LFB63
+ 584 0171 94010000 		.4byte	.LFE63-.LFB63
+ 585 0175 01       		.uleb128 0x1
+ 586 0176 9C       		.byte	0x9c
+ 587 0177 34020000 		.4byte	0x234
+ 588 017b 0D       		.uleb128 0xd
+ 589 017c 5A020000 		.4byte	.LASF25
+ 590 0180 01       		.byte	0x1
+ 591 0181 27       		.byte	0x27
+ 592 0182 34020000 		.4byte	0x234
+ 593 0186 00000000 		.4byte	.LLST0
+ 594 018a 0D       		.uleb128 0xd
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 14
+
+
+ 595 018b D1010000 		.4byte	.LASF26
+ 596 018f 01       		.byte	0x1
+ 597 0190 27       		.byte	0x27
+ 598 0191 3A020000 		.4byte	0x23a
+ 599 0195 2C000000 		.4byte	.LLST1
+ 600 0199 0E       		.uleb128 0xe
+ 601 019a 6900     		.ascii	"i\000"
+ 602 019c 01       		.byte	0x1
+ 603 019d 29       		.byte	0x29
+ 604 019e 73000000 		.4byte	0x73
+ 605 01a2 58000000 		.4byte	.LLST2
+ 606 01a6 0E       		.uleb128 0xe
+ 607 01a7 6A00     		.ascii	"j\000"
+ 608 01a9 01       		.byte	0x1
+ 609 01aa 29       		.byte	0x29
+ 610 01ab 73000000 		.4byte	0x73
+ 611 01af 82000000 		.4byte	.LLST3
+ 612 01b3 0F       		.uleb128 0xf
+ 613 01b4 AC020000 		.4byte	.LASF27
+ 614 01b8 01       		.byte	0x1
+ 615 01b9 2A       		.byte	0x2a
+ 616 01ba AF000000 		.4byte	0xaf
+ 617 01be 95000000 		.4byte	.LLST4
+ 618 01c2 0F       		.uleb128 0xf
+ 619 01c3 90020000 		.4byte	.LASF28
+ 620 01c7 01       		.byte	0x1
+ 621 01c8 2B       		.byte	0x2b
+ 622 01c9 AF000000 		.4byte	0xaf
+ 623 01cd FA000000 		.4byte	.LLST5
+ 624 01d1 10       		.uleb128 0x10
+ 625 01d2 53020000 		.4byte	0x253
+ 626 01d6 25010000 		.4byte	.LLST6
+ 627 01da 0F       		.uleb128 0xf
+ 628 01db 0A000000 		.4byte	.LASF29
+ 629 01df 01       		.byte	0x1
+ 630 01e0 2C       		.byte	0x2c
+ 631 01e1 40020000 		.4byte	0x240
+ 632 01e5 4A010000 		.4byte	.LLST7
+ 633 01e9 11       		.uleb128 0x11
+ 634 01ea 72000000 		.4byte	.LBB2
+ 635 01ee 38000000 		.4byte	.LBE2-.LBB2
+ 636 01f2 15020000 		.4byte	0x215
+ 637 01f6 0F       		.uleb128 0xf
+ 638 01f7 FB010000 		.4byte	.LASF30
+ 639 01fb 01       		.byte	0x1
+ 640 01fc 33       		.byte	0x33
+ 641 01fd AF000000 		.4byte	0xaf
+ 642 0201 5E010000 		.4byte	.LLST8
+ 643 0205 0F       		.uleb128 0xf
+ 644 0206 E9010000 		.4byte	.LASF31
+ 645 020a 01       		.byte	0x1
+ 646 020b 34       		.byte	0x34
+ 647 020c AF000000 		.4byte	0xaf
+ 648 0210 7C010000 		.4byte	.LLST9
+ 649 0214 00       		.byte	0
+ 650 0215 12       		.uleb128 0x12
+ 651 0216 38000000 		.4byte	.LVL5
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 15
+
+
+ 652 021a 2C030000 		.4byte	0x32c
+ 653 021e 13       		.uleb128 0x13
+ 654 021f 6E000000 		.4byte	.LVL14
+ 655 0223 37030000 		.4byte	0x337
+ 656 0227 14       		.uleb128 0x14
+ 657 0228 01       		.uleb128 0x1
+ 658 0229 50       		.byte	0x50
+ 659 022a 02       		.uleb128 0x2
+ 660 022b 76       		.byte	0x76
+ 661 022c 00       		.sleb128 0
+ 662 022d 14       		.uleb128 0x14
+ 663 022e 01       		.uleb128 0x1
+ 664 022f 51       		.byte	0x51
+ 665 0230 01       		.uleb128 0x1
+ 666 0231 30       		.byte	0x30
+ 667 0232 00       		.byte	0
+ 668 0233 00       		.byte	0
+ 669 0234 15       		.uleb128 0x15
+ 670 0235 04       		.byte	0x4
+ 671 0236 A3000000 		.4byte	0xa3
+ 672 023a 15       		.uleb128 0x15
+ 673 023b 04       		.byte	0x4
+ 674 023c 5B010000 		.4byte	0x15b
+ 675 0240 0A       		.uleb128 0xa
+ 676 0241 AF000000 		.4byte	0xaf
+ 677 0245 53020000 		.4byte	0x253
+ 678 0249 16       		.uleb128 0x16
+ 679 024a CB000000 		.4byte	0xcb
+ 680 024e D1010000 		.4byte	0x1d1
+ 681 0252 00       		.byte	0
+ 682 0253 17       		.uleb128 0x17
+ 683 0254 CB000000 		.4byte	0xcb
+ 684 0258 18       		.uleb128 0x18
+ 685 0259 1F020000 		.4byte	.LASF33
+ 686 025d 01       		.byte	0x1
+ 687 025e 6F       		.byte	0x6f
+ 688 025f 00000000 		.4byte	.LFB64
+ 689 0263 50000000 		.4byte	.LFE64-.LFB64
+ 690 0267 01       		.uleb128 0x1
+ 691 0268 9C       		.byte	0x9c
+ 692 0269 0B030000 		.4byte	0x30b
+ 693 026d 0D       		.uleb128 0xd
+ 694 026e D1010000 		.4byte	.LASF26
+ 695 0272 01       		.byte	0x1
+ 696 0273 6F       		.byte	0x6f
+ 697 0274 3A020000 		.4byte	0x23a
+ 698 0278 9A010000 		.4byte	.LLST10
+ 699 027c 11       		.uleb128 0x11
+ 700 027d 06000000 		.4byte	.LBB3
+ 701 0281 36000000 		.4byte	.LBE3-.LBB3
+ 702 0285 EC020000 		.4byte	0x2ec
+ 703 0289 0E       		.uleb128 0xe
+ 704 028a 6900     		.ascii	"i\000"
+ 705 028c 01       		.byte	0x1
+ 706 028d 72       		.byte	0x72
+ 707 028e 8C000000 		.4byte	0x8c
+ 708 0292 B8010000 		.4byte	.LLST11
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 16
+
+
+ 709 0296 19       		.uleb128 0x19
+ 710 0297 0A000000 		.4byte	.LBB4
+ 711 029b 26000000 		.4byte	.LBE4-.LBB4
+ 712 029f 0F       		.uleb128 0xf
+ 713 02a0 29000000 		.4byte	.LASF34
+ 714 02a4 01       		.byte	0x1
+ 715 02a5 74       		.byte	0x74
+ 716 02a6 AF000000 		.4byte	0xaf
+ 717 02aa D7010000 		.4byte	.LLST12
+ 718 02ae 1A       		.uleb128 0x1a
+ 719 02af 72020000 		.4byte	.LASF35
+ 720 02b3 01       		.byte	0x1
+ 721 02b4 75       		.byte	0x75
+ 722 02b5 0B030000 		.4byte	0x30b
+ 723 02b9 02       		.uleb128 0x2
+ 724 02ba 91       		.byte	0x91
+ 725 02bb 6C       		.sleb128 -20
+ 726 02bc 19       		.uleb128 0x19
+ 727 02bd 18000000 		.4byte	.LBB5
+ 728 02c1 18000000 		.4byte	.LBE5-.LBB5
+ 729 02c5 0E       		.uleb128 0xe
+ 730 02c6 6200     		.ascii	"b\000"
+ 731 02c8 01       		.byte	0x1
+ 732 02c9 79       		.byte	0x79
+ 733 02ca 97000000 		.4byte	0x97
+ 734 02ce F6010000 		.4byte	.LLST13
+ 735 02d2 13       		.uleb128 0x13
+ 736 02d3 28000000 		.4byte	.LVL56
+ 737 02d7 40030000 		.4byte	0x340
+ 738 02db 14       		.uleb128 0x14
+ 739 02dc 01       		.uleb128 0x1
+ 740 02dd 50       		.byte	0x50
+ 741 02de 09       		.uleb128 0x9
+ 742 02df 91       		.byte	0x91
+ 743 02e0 00       		.sleb128 0
+ 744 02e1 74       		.byte	0x74
+ 745 02e2 00       		.sleb128 0
+ 746 02e3 22       		.byte	0x22
+ 747 02e4 44       		.byte	0x44
+ 748 02e5 1C       		.byte	0x1c
+ 749 02e6 94       		.byte	0x94
+ 750 02e7 01       		.byte	0x1
+ 751 02e8 00       		.byte	0
+ 752 02e9 00       		.byte	0
+ 753 02ea 00       		.byte	0
+ 754 02eb 00       		.byte	0
+ 755 02ec 19       		.uleb128 0x19
+ 756 02ed 3C000000 		.4byte	.LBB6
+ 757 02f1 10000000 		.4byte	.LBE6-.LBB6
+ 758 02f5 1B       		.uleb128 0x1b
+ 759 02f6 6900     		.ascii	"i\000"
+ 760 02f8 01       		.byte	0x1
+ 761 02f9 80       		.byte	0x80
+ 762 02fa 8C000000 		.4byte	0x8c
+ 763 02fe 01       		.uleb128 0x1
+ 764 02ff 54       		.byte	0x54
+ 765 0300 12       		.uleb128 0x12
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 17
+
+
+ 766 0301 44000000 		.4byte	.LVL61
+ 767 0305 40030000 		.4byte	0x340
+ 768 0309 00       		.byte	0
+ 769 030a 00       		.byte	0
+ 770 030b 0A       		.uleb128 0xa
+ 771 030c 81000000 		.4byte	0x81
+ 772 0310 1B030000 		.4byte	0x31b
+ 773 0314 1C       		.uleb128 0x1c
+ 774 0315 CB000000 		.4byte	0xcb
+ 775 0319 03       		.byte	0x3
+ 776 031a 00       		.byte	0
+ 777 031b 1D       		.uleb128 0x1d
+ 778 031c B1010000 		.4byte	.LASF40
+ 779 0320 06       		.byte	0x6
+ 780 0321 1207     		.2byte	0x712
+ 781 0323 27030000 		.4byte	0x327
+ 782 0327 1E       		.uleb128 0x1e
+ 783 0328 8C000000 		.4byte	0x8c
+ 784 032c 1F       		.uleb128 0x1f
+ 785 032d 706F7700 		.ascii	"pow\000"
+ 786 0331 706F7700 		.ascii	"pow\000"
+ 787 0335 07       		.byte	0x7
+ 788 0336 86       		.byte	0x86
+ 789 0337 20       		.uleb128 0x20
+ 790 0338 39000000 		.4byte	.LASF41
+ 791 033c 39000000 		.4byte	.LASF41
+ 792 0340 21       		.uleb128 0x21
+ 793 0341 18000000 		.4byte	.LASF36
+ 794 0345 18000000 		.4byte	.LASF36
+ 795 0349 08       		.byte	0x8
+ 796 034a 8A       		.byte	0x8a
+ 797 034b 00       		.byte	0
+ 798              		.section	.debug_abbrev,"",%progbits
+ 799              	.Ldebug_abbrev0:
+ 800 0000 01       		.uleb128 0x1
+ 801 0001 11       		.uleb128 0x11
+ 802 0002 01       		.byte	0x1
+ 803 0003 25       		.uleb128 0x25
+ 804 0004 0E       		.uleb128 0xe
+ 805 0005 13       		.uleb128 0x13
+ 806 0006 0B       		.uleb128 0xb
+ 807 0007 03       		.uleb128 0x3
+ 808 0008 0E       		.uleb128 0xe
+ 809 0009 1B       		.uleb128 0x1b
+ 810 000a 0E       		.uleb128 0xe
+ 811 000b 55       		.uleb128 0x55
+ 812 000c 17       		.uleb128 0x17
+ 813 000d 11       		.uleb128 0x11
+ 814 000e 01       		.uleb128 0x1
+ 815 000f 10       		.uleb128 0x10
+ 816 0010 17       		.uleb128 0x17
+ 817 0011 00       		.byte	0
+ 818 0012 00       		.byte	0
+ 819 0013 02       		.uleb128 0x2
+ 820 0014 24       		.uleb128 0x24
+ 821 0015 00       		.byte	0
+ 822 0016 0B       		.uleb128 0xb
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 18
+
+
+ 823 0017 0B       		.uleb128 0xb
+ 824 0018 3E       		.uleb128 0x3e
+ 825 0019 0B       		.uleb128 0xb
+ 826 001a 03       		.uleb128 0x3
+ 827 001b 0E       		.uleb128 0xe
+ 828 001c 00       		.byte	0
+ 829 001d 00       		.byte	0
+ 830 001e 03       		.uleb128 0x3
+ 831 001f 16       		.uleb128 0x16
+ 832 0020 00       		.byte	0
+ 833 0021 03       		.uleb128 0x3
+ 834 0022 0E       		.uleb128 0xe
+ 835 0023 3A       		.uleb128 0x3a
+ 836 0024 0B       		.uleb128 0xb
+ 837 0025 3B       		.uleb128 0x3b
+ 838 0026 0B       		.uleb128 0xb
+ 839 0027 49       		.uleb128 0x49
+ 840 0028 13       		.uleb128 0x13
+ 841 0029 00       		.byte	0
+ 842 002a 00       		.byte	0
+ 843 002b 04       		.uleb128 0x4
+ 844 002c 24       		.uleb128 0x24
+ 845 002d 00       		.byte	0
+ 846 002e 0B       		.uleb128 0xb
+ 847 002f 0B       		.uleb128 0xb
+ 848 0030 3E       		.uleb128 0x3e
+ 849 0031 0B       		.uleb128 0xb
+ 850 0032 03       		.uleb128 0x3
+ 851 0033 08       		.uleb128 0x8
+ 852 0034 00       		.byte	0
+ 853 0035 00       		.byte	0
+ 854 0036 05       		.uleb128 0x5
+ 855 0037 16       		.uleb128 0x16
+ 856 0038 00       		.byte	0
+ 857 0039 03       		.uleb128 0x3
+ 858 003a 0E       		.uleb128 0xe
+ 859 003b 3A       		.uleb128 0x3a
+ 860 003c 0B       		.uleb128 0xb
+ 861 003d 3B       		.uleb128 0x3b
+ 862 003e 05       		.uleb128 0x5
+ 863 003f 49       		.uleb128 0x49
+ 864 0040 13       		.uleb128 0x13
+ 865 0041 00       		.byte	0
+ 866 0042 00       		.byte	0
+ 867 0043 06       		.uleb128 0x6
+ 868 0044 13       		.uleb128 0x13
+ 869 0045 01       		.byte	0x1
+ 870 0046 0B       		.uleb128 0xb
+ 871 0047 05       		.uleb128 0x5
+ 872 0048 3A       		.uleb128 0x3a
+ 873 0049 0B       		.uleb128 0xb
+ 874 004a 3B       		.uleb128 0x3b
+ 875 004b 0B       		.uleb128 0xb
+ 876 004c 01       		.uleb128 0x1
+ 877 004d 13       		.uleb128 0x13
+ 878 004e 00       		.byte	0
+ 879 004f 00       		.byte	0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 19
+
+
+ 880 0050 07       		.uleb128 0x7
+ 881 0051 0D       		.uleb128 0xd
+ 882 0052 00       		.byte	0
+ 883 0053 03       		.uleb128 0x3
+ 884 0054 08       		.uleb128 0x8
+ 885 0055 3A       		.uleb128 0x3a
+ 886 0056 0B       		.uleb128 0xb
+ 887 0057 3B       		.uleb128 0x3b
+ 888 0058 0B       		.uleb128 0xb
+ 889 0059 49       		.uleb128 0x49
+ 890 005a 13       		.uleb128 0x13
+ 891 005b 38       		.uleb128 0x38
+ 892 005c 0B       		.uleb128 0xb
+ 893 005d 00       		.byte	0
+ 894 005e 00       		.byte	0
+ 895 005f 08       		.uleb128 0x8
+ 896 0060 0D       		.uleb128 0xd
+ 897 0061 00       		.byte	0
+ 898 0062 03       		.uleb128 0x3
+ 899 0063 0E       		.uleb128 0xe
+ 900 0064 3A       		.uleb128 0x3a
+ 901 0065 0B       		.uleb128 0xb
+ 902 0066 3B       		.uleb128 0x3b
+ 903 0067 0B       		.uleb128 0xb
+ 904 0068 49       		.uleb128 0x49
+ 905 0069 13       		.uleb128 0x13
+ 906 006a 38       		.uleb128 0x38
+ 907 006b 0B       		.uleb128 0xb
+ 908 006c 00       		.byte	0
+ 909 006d 00       		.byte	0
+ 910 006e 09       		.uleb128 0x9
+ 911 006f 0D       		.uleb128 0xd
+ 912 0070 00       		.byte	0
+ 913 0071 03       		.uleb128 0x3
+ 914 0072 0E       		.uleb128 0xe
+ 915 0073 3A       		.uleb128 0x3a
+ 916 0074 0B       		.uleb128 0xb
+ 917 0075 3B       		.uleb128 0x3b
+ 918 0076 0B       		.uleb128 0xb
+ 919 0077 49       		.uleb128 0x49
+ 920 0078 13       		.uleb128 0x13
+ 921 0079 38       		.uleb128 0x38
+ 922 007a 05       		.uleb128 0x5
+ 923 007b 00       		.byte	0
+ 924 007c 00       		.byte	0
+ 925 007d 0A       		.uleb128 0xa
+ 926 007e 01       		.uleb128 0x1
+ 927 007f 01       		.byte	0x1
+ 928 0080 49       		.uleb128 0x49
+ 929 0081 13       		.uleb128 0x13
+ 930 0082 01       		.uleb128 0x1
+ 931 0083 13       		.uleb128 0x13
+ 932 0084 00       		.byte	0
+ 933 0085 00       		.byte	0
+ 934 0086 0B       		.uleb128 0xb
+ 935 0087 21       		.uleb128 0x21
+ 936 0088 00       		.byte	0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 20
+
+
+ 937 0089 49       		.uleb128 0x49
+ 938 008a 13       		.uleb128 0x13
+ 939 008b 2F       		.uleb128 0x2f
+ 940 008c 05       		.uleb128 0x5
+ 941 008d 00       		.byte	0
+ 942 008e 00       		.byte	0
+ 943 008f 0C       		.uleb128 0xc
+ 944 0090 2E       		.uleb128 0x2e
+ 945 0091 01       		.byte	0x1
+ 946 0092 3F       		.uleb128 0x3f
+ 947 0093 19       		.uleb128 0x19
+ 948 0094 03       		.uleb128 0x3
+ 949 0095 0E       		.uleb128 0xe
+ 950 0096 3A       		.uleb128 0x3a
+ 951 0097 0B       		.uleb128 0xb
+ 952 0098 3B       		.uleb128 0x3b
+ 953 0099 0B       		.uleb128 0xb
+ 954 009a 27       		.uleb128 0x27
+ 955 009b 19       		.uleb128 0x19
+ 956 009c 11       		.uleb128 0x11
+ 957 009d 01       		.uleb128 0x1
+ 958 009e 12       		.uleb128 0x12
+ 959 009f 06       		.uleb128 0x6
+ 960 00a0 40       		.uleb128 0x40
+ 961 00a1 18       		.uleb128 0x18
+ 962 00a2 9642     		.uleb128 0x2116
+ 963 00a4 19       		.uleb128 0x19
+ 964 00a5 01       		.uleb128 0x1
+ 965 00a6 13       		.uleb128 0x13
+ 966 00a7 00       		.byte	0
+ 967 00a8 00       		.byte	0
+ 968 00a9 0D       		.uleb128 0xd
+ 969 00aa 05       		.uleb128 0x5
+ 970 00ab 00       		.byte	0
+ 971 00ac 03       		.uleb128 0x3
+ 972 00ad 0E       		.uleb128 0xe
+ 973 00ae 3A       		.uleb128 0x3a
+ 974 00af 0B       		.uleb128 0xb
+ 975 00b0 3B       		.uleb128 0x3b
+ 976 00b1 0B       		.uleb128 0xb
+ 977 00b2 49       		.uleb128 0x49
+ 978 00b3 13       		.uleb128 0x13
+ 979 00b4 02       		.uleb128 0x2
+ 980 00b5 17       		.uleb128 0x17
+ 981 00b6 00       		.byte	0
+ 982 00b7 00       		.byte	0
+ 983 00b8 0E       		.uleb128 0xe
+ 984 00b9 34       		.uleb128 0x34
+ 985 00ba 00       		.byte	0
+ 986 00bb 03       		.uleb128 0x3
+ 987 00bc 08       		.uleb128 0x8
+ 988 00bd 3A       		.uleb128 0x3a
+ 989 00be 0B       		.uleb128 0xb
+ 990 00bf 3B       		.uleb128 0x3b
+ 991 00c0 0B       		.uleb128 0xb
+ 992 00c1 49       		.uleb128 0x49
+ 993 00c2 13       		.uleb128 0x13
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 21
+
+
+ 994 00c3 02       		.uleb128 0x2
+ 995 00c4 17       		.uleb128 0x17
+ 996 00c5 00       		.byte	0
+ 997 00c6 00       		.byte	0
+ 998 00c7 0F       		.uleb128 0xf
+ 999 00c8 34       		.uleb128 0x34
+ 1000 00c9 00       		.byte	0
+ 1001 00ca 03       		.uleb128 0x3
+ 1002 00cb 0E       		.uleb128 0xe
+ 1003 00cc 3A       		.uleb128 0x3a
+ 1004 00cd 0B       		.uleb128 0xb
+ 1005 00ce 3B       		.uleb128 0x3b
+ 1006 00cf 0B       		.uleb128 0xb
+ 1007 00d0 49       		.uleb128 0x49
+ 1008 00d1 13       		.uleb128 0x13
+ 1009 00d2 02       		.uleb128 0x2
+ 1010 00d3 17       		.uleb128 0x17
+ 1011 00d4 00       		.byte	0
+ 1012 00d5 00       		.byte	0
+ 1013 00d6 10       		.uleb128 0x10
+ 1014 00d7 34       		.uleb128 0x34
+ 1015 00d8 00       		.byte	0
+ 1016 00d9 34       		.uleb128 0x34
+ 1017 00da 19       		.uleb128 0x19
+ 1018 00db 49       		.uleb128 0x49
+ 1019 00dc 13       		.uleb128 0x13
+ 1020 00dd 02       		.uleb128 0x2
+ 1021 00de 17       		.uleb128 0x17
+ 1022 00df 00       		.byte	0
+ 1023 00e0 00       		.byte	0
+ 1024 00e1 11       		.uleb128 0x11
+ 1025 00e2 0B       		.uleb128 0xb
+ 1026 00e3 01       		.byte	0x1
+ 1027 00e4 11       		.uleb128 0x11
+ 1028 00e5 01       		.uleb128 0x1
+ 1029 00e6 12       		.uleb128 0x12
+ 1030 00e7 06       		.uleb128 0x6
+ 1031 00e8 01       		.uleb128 0x1
+ 1032 00e9 13       		.uleb128 0x13
+ 1033 00ea 00       		.byte	0
+ 1034 00eb 00       		.byte	0
+ 1035 00ec 12       		.uleb128 0x12
+ 1036 00ed 898201   		.uleb128 0x4109
+ 1037 00f0 00       		.byte	0
+ 1038 00f1 11       		.uleb128 0x11
+ 1039 00f2 01       		.uleb128 0x1
+ 1040 00f3 31       		.uleb128 0x31
+ 1041 00f4 13       		.uleb128 0x13
+ 1042 00f5 00       		.byte	0
+ 1043 00f6 00       		.byte	0
+ 1044 00f7 13       		.uleb128 0x13
+ 1045 00f8 898201   		.uleb128 0x4109
+ 1046 00fb 01       		.byte	0x1
+ 1047 00fc 11       		.uleb128 0x11
+ 1048 00fd 01       		.uleb128 0x1
+ 1049 00fe 31       		.uleb128 0x31
+ 1050 00ff 13       		.uleb128 0x13
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 22
+
+
+ 1051 0100 00       		.byte	0
+ 1052 0101 00       		.byte	0
+ 1053 0102 14       		.uleb128 0x14
+ 1054 0103 8A8201   		.uleb128 0x410a
+ 1055 0106 00       		.byte	0
+ 1056 0107 02       		.uleb128 0x2
+ 1057 0108 18       		.uleb128 0x18
+ 1058 0109 9142     		.uleb128 0x2111
+ 1059 010b 18       		.uleb128 0x18
+ 1060 010c 00       		.byte	0
+ 1061 010d 00       		.byte	0
+ 1062 010e 15       		.uleb128 0x15
+ 1063 010f 0F       		.uleb128 0xf
+ 1064 0110 00       		.byte	0
+ 1065 0111 0B       		.uleb128 0xb
+ 1066 0112 0B       		.uleb128 0xb
+ 1067 0113 49       		.uleb128 0x49
+ 1068 0114 13       		.uleb128 0x13
+ 1069 0115 00       		.byte	0
+ 1070 0116 00       		.byte	0
+ 1071 0117 16       		.uleb128 0x16
+ 1072 0118 21       		.uleb128 0x21
+ 1073 0119 00       		.byte	0
+ 1074 011a 49       		.uleb128 0x49
+ 1075 011b 13       		.uleb128 0x13
+ 1076 011c 2F       		.uleb128 0x2f
+ 1077 011d 13       		.uleb128 0x13
+ 1078 011e 00       		.byte	0
+ 1079 011f 00       		.byte	0
+ 1080 0120 17       		.uleb128 0x17
+ 1081 0121 26       		.uleb128 0x26
+ 1082 0122 00       		.byte	0
+ 1083 0123 49       		.uleb128 0x49
+ 1084 0124 13       		.uleb128 0x13
+ 1085 0125 00       		.byte	0
+ 1086 0126 00       		.byte	0
+ 1087 0127 18       		.uleb128 0x18
+ 1088 0128 2E       		.uleb128 0x2e
+ 1089 0129 01       		.byte	0x1
+ 1090 012a 3F       		.uleb128 0x3f
+ 1091 012b 19       		.uleb128 0x19
+ 1092 012c 03       		.uleb128 0x3
+ 1093 012d 0E       		.uleb128 0xe
+ 1094 012e 3A       		.uleb128 0x3a
+ 1095 012f 0B       		.uleb128 0xb
+ 1096 0130 3B       		.uleb128 0x3b
+ 1097 0131 0B       		.uleb128 0xb
+ 1098 0132 27       		.uleb128 0x27
+ 1099 0133 19       		.uleb128 0x19
+ 1100 0134 11       		.uleb128 0x11
+ 1101 0135 01       		.uleb128 0x1
+ 1102 0136 12       		.uleb128 0x12
+ 1103 0137 06       		.uleb128 0x6
+ 1104 0138 40       		.uleb128 0x40
+ 1105 0139 18       		.uleb128 0x18
+ 1106 013a 9742     		.uleb128 0x2117
+ 1107 013c 19       		.uleb128 0x19
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 23
+
+
+ 1108 013d 01       		.uleb128 0x1
+ 1109 013e 13       		.uleb128 0x13
+ 1110 013f 00       		.byte	0
+ 1111 0140 00       		.byte	0
+ 1112 0141 19       		.uleb128 0x19
+ 1113 0142 0B       		.uleb128 0xb
+ 1114 0143 01       		.byte	0x1
+ 1115 0144 11       		.uleb128 0x11
+ 1116 0145 01       		.uleb128 0x1
+ 1117 0146 12       		.uleb128 0x12
+ 1118 0147 06       		.uleb128 0x6
+ 1119 0148 00       		.byte	0
+ 1120 0149 00       		.byte	0
+ 1121 014a 1A       		.uleb128 0x1a
+ 1122 014b 34       		.uleb128 0x34
+ 1123 014c 00       		.byte	0
+ 1124 014d 03       		.uleb128 0x3
+ 1125 014e 0E       		.uleb128 0xe
+ 1126 014f 3A       		.uleb128 0x3a
+ 1127 0150 0B       		.uleb128 0xb
+ 1128 0151 3B       		.uleb128 0x3b
+ 1129 0152 0B       		.uleb128 0xb
+ 1130 0153 49       		.uleb128 0x49
+ 1131 0154 13       		.uleb128 0x13
+ 1132 0155 02       		.uleb128 0x2
+ 1133 0156 18       		.uleb128 0x18
+ 1134 0157 00       		.byte	0
+ 1135 0158 00       		.byte	0
+ 1136 0159 1B       		.uleb128 0x1b
+ 1137 015a 34       		.uleb128 0x34
+ 1138 015b 00       		.byte	0
+ 1139 015c 03       		.uleb128 0x3
+ 1140 015d 08       		.uleb128 0x8
+ 1141 015e 3A       		.uleb128 0x3a
+ 1142 015f 0B       		.uleb128 0xb
+ 1143 0160 3B       		.uleb128 0x3b
+ 1144 0161 0B       		.uleb128 0xb
+ 1145 0162 49       		.uleb128 0x49
+ 1146 0163 13       		.uleb128 0x13
+ 1147 0164 02       		.uleb128 0x2
+ 1148 0165 18       		.uleb128 0x18
+ 1149 0166 00       		.byte	0
+ 1150 0167 00       		.byte	0
+ 1151 0168 1C       		.uleb128 0x1c
+ 1152 0169 21       		.uleb128 0x21
+ 1153 016a 00       		.byte	0
+ 1154 016b 49       		.uleb128 0x49
+ 1155 016c 13       		.uleb128 0x13
+ 1156 016d 2F       		.uleb128 0x2f
+ 1157 016e 0B       		.uleb128 0xb
+ 1158 016f 00       		.byte	0
+ 1159 0170 00       		.byte	0
+ 1160 0171 1D       		.uleb128 0x1d
+ 1161 0172 34       		.uleb128 0x34
+ 1162 0173 00       		.byte	0
+ 1163 0174 03       		.uleb128 0x3
+ 1164 0175 0E       		.uleb128 0xe
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 24
+
+
+ 1165 0176 3A       		.uleb128 0x3a
+ 1166 0177 0B       		.uleb128 0xb
+ 1167 0178 3B       		.uleb128 0x3b
+ 1168 0179 05       		.uleb128 0x5
+ 1169 017a 49       		.uleb128 0x49
+ 1170 017b 13       		.uleb128 0x13
+ 1171 017c 3F       		.uleb128 0x3f
+ 1172 017d 19       		.uleb128 0x19
+ 1173 017e 3C       		.uleb128 0x3c
+ 1174 017f 19       		.uleb128 0x19
+ 1175 0180 00       		.byte	0
+ 1176 0181 00       		.byte	0
+ 1177 0182 1E       		.uleb128 0x1e
+ 1178 0183 35       		.uleb128 0x35
+ 1179 0184 00       		.byte	0
+ 1180 0185 49       		.uleb128 0x49
+ 1181 0186 13       		.uleb128 0x13
+ 1182 0187 00       		.byte	0
+ 1183 0188 00       		.byte	0
+ 1184 0189 1F       		.uleb128 0x1f
+ 1185 018a 2E       		.uleb128 0x2e
+ 1186 018b 00       		.byte	0
+ 1187 018c 3F       		.uleb128 0x3f
+ 1188 018d 19       		.uleb128 0x19
+ 1189 018e 3C       		.uleb128 0x3c
+ 1190 018f 19       		.uleb128 0x19
+ 1191 0190 6E       		.uleb128 0x6e
+ 1192 0191 08       		.uleb128 0x8
+ 1193 0192 03       		.uleb128 0x3
+ 1194 0193 08       		.uleb128 0x8
+ 1195 0194 3A       		.uleb128 0x3a
+ 1196 0195 0B       		.uleb128 0xb
+ 1197 0196 3B       		.uleb128 0x3b
+ 1198 0197 0B       		.uleb128 0xb
+ 1199 0198 00       		.byte	0
+ 1200 0199 00       		.byte	0
+ 1201 019a 20       		.uleb128 0x20
+ 1202 019b 2E       		.uleb128 0x2e
+ 1203 019c 00       		.byte	0
+ 1204 019d 3F       		.uleb128 0x3f
+ 1205 019e 19       		.uleb128 0x19
+ 1206 019f 3C       		.uleb128 0x3c
+ 1207 01a0 19       		.uleb128 0x19
+ 1208 01a1 6E       		.uleb128 0x6e
+ 1209 01a2 0E       		.uleb128 0xe
+ 1210 01a3 03       		.uleb128 0x3
+ 1211 01a4 0E       		.uleb128 0xe
+ 1212 01a5 00       		.byte	0
+ 1213 01a6 00       		.byte	0
+ 1214 01a7 21       		.uleb128 0x21
+ 1215 01a8 2E       		.uleb128 0x2e
+ 1216 01a9 00       		.byte	0
+ 1217 01aa 3F       		.uleb128 0x3f
+ 1218 01ab 19       		.uleb128 0x19
+ 1219 01ac 3C       		.uleb128 0x3c
+ 1220 01ad 19       		.uleb128 0x19
+ 1221 01ae 6E       		.uleb128 0x6e
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 25
+
+
+ 1222 01af 0E       		.uleb128 0xe
+ 1223 01b0 03       		.uleb128 0x3
+ 1224 01b1 0E       		.uleb128 0xe
+ 1225 01b2 3A       		.uleb128 0x3a
+ 1226 01b3 0B       		.uleb128 0xb
+ 1227 01b4 3B       		.uleb128 0x3b
+ 1228 01b5 0B       		.uleb128 0xb
+ 1229 01b6 00       		.byte	0
+ 1230 01b7 00       		.byte	0
+ 1231 01b8 00       		.byte	0
+ 1232              		.section	.debug_loc,"",%progbits
+ 1233              	.Ldebug_loc0:
+ 1234              	.LLST0:
+ 1235 0000 00000000 		.4byte	.LVL0
+ 1236 0004 12000000 		.4byte	.LVL1
+ 1237 0008 0100     		.2byte	0x1
+ 1238 000a 50       		.byte	0x50
+ 1239 000b 12000000 		.4byte	.LVL1
+ 1240 000f C6000000 		.4byte	.LVL28
+ 1241 0013 0100     		.2byte	0x1
+ 1242 0015 54       		.byte	0x54
+ 1243 0016 C6000000 		.4byte	.LVL28
+ 1244 001a 94010000 		.4byte	.LFE63
+ 1245 001e 0400     		.2byte	0x4
+ 1246 0020 F3       		.byte	0xf3
+ 1247 0021 01       		.uleb128 0x1
+ 1248 0022 50       		.byte	0x50
+ 1249 0023 9F       		.byte	0x9f
+ 1250 0024 00000000 		.4byte	0
+ 1251 0028 00000000 		.4byte	0
+ 1252              	.LLST1:
+ 1253 002c 00000000 		.4byte	.LVL0
+ 1254 0030 15000000 		.4byte	.LVL2-1
+ 1255 0034 0100     		.2byte	0x1
+ 1256 0036 51       		.byte	0x51
+ 1257 0037 15000000 		.4byte	.LVL2-1
+ 1258 003b 88010000 		.4byte	.LVL48
+ 1259 003f 0100     		.2byte	0x1
+ 1260 0041 5B       		.byte	0x5b
+ 1261 0042 88010000 		.4byte	.LVL48
+ 1262 0046 94010000 		.4byte	.LFE63
+ 1263 004a 0400     		.2byte	0x4
+ 1264 004c F3       		.byte	0xf3
+ 1265 004d 01       		.uleb128 0x1
+ 1266 004e 51       		.byte	0x51
+ 1267 004f 9F       		.byte	0x9f
+ 1268 0050 00000000 		.4byte	0
+ 1269 0054 00000000 		.4byte	0
+ 1270              	.LLST2:
+ 1271 0058 6E000000 		.4byte	.LVL14
+ 1272 005c 72000000 		.4byte	.LVL15
+ 1273 0060 0200     		.2byte	0x2
+ 1274 0062 30       		.byte	0x30
+ 1275 0063 9F       		.byte	0x9f
+ 1276 0064 72000000 		.4byte	.LVL15
+ 1277 0068 C4000000 		.4byte	.LVL27
+ 1278 006c 0100     		.2byte	0x1
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 26
+
+
+ 1279 006e 55       		.byte	0x55
+ 1280 006f C4000000 		.4byte	.LVL27
+ 1281 0073 88010000 		.4byte	.LVL48
+ 1282 0077 0100     		.2byte	0x1
+ 1283 0079 5A       		.byte	0x5a
+ 1284 007a 00000000 		.4byte	0
+ 1285 007e 00000000 		.4byte	0
+ 1286              	.LLST3:
+ 1287 0082 CE000000 		.4byte	.LVL29
+ 1288 0086 68010000 		.4byte	.LVL46
+ 1289 008a 0100     		.2byte	0x1
+ 1290 008c 54       		.byte	0x54
+ 1291 008d 00000000 		.4byte	0
+ 1292 0091 00000000 		.4byte	0
+ 1293              	.LLST4:
+ 1294 0095 C6000000 		.4byte	.LVL28
+ 1295 0099 D2000000 		.4byte	.LVL30
+ 1296 009d 0600     		.2byte	0x6
+ 1297 009f 9E       		.byte	0x9e
+ 1298 00a0 04       		.uleb128 0x4
+ 1299 00a1 00000000 		.4byte	0
+ 1300 00a5 D2000000 		.4byte	.LVL30
+ 1301 00a9 DE000000 		.4byte	.LVL32
+ 1302 00ad 0100     		.2byte	0x1
+ 1303 00af 55       		.byte	0x55
+ 1304 00b0 DE000000 		.4byte	.LVL32
+ 1305 00b4 E0000000 		.4byte	.LVL33
+ 1306 00b8 0100     		.2byte	0x1
+ 1307 00ba 50       		.byte	0x50
+ 1308 00bb E0000000 		.4byte	.LVL33
+ 1309 00bf FC000000 		.4byte	.LVL36
+ 1310 00c3 0100     		.2byte	0x1
+ 1311 00c5 55       		.byte	0x55
+ 1312 00c6 FC000000 		.4byte	.LVL36
+ 1313 00ca FE000000 		.4byte	.LVL37
+ 1314 00ce 0100     		.2byte	0x1
+ 1315 00d0 50       		.byte	0x50
+ 1316 00d1 FE000000 		.4byte	.LVL37
+ 1317 00d5 2A010000 		.4byte	.LVL42
+ 1318 00d9 0100     		.2byte	0x1
+ 1319 00db 55       		.byte	0x55
+ 1320 00dc 2A010000 		.4byte	.LVL42
+ 1321 00e0 2E010000 		.4byte	.LVL43
+ 1322 00e4 0100     		.2byte	0x1
+ 1323 00e6 50       		.byte	0x50
+ 1324 00e7 2E010000 		.4byte	.LVL43
+ 1325 00eb 31010000 		.4byte	.LVL44-1
+ 1326 00ef 0100     		.2byte	0x1
+ 1327 00f1 51       		.byte	0x51
+ 1328 00f2 00000000 		.4byte	0
+ 1329 00f6 00000000 		.4byte	0
+ 1330              	.LLST5:
+ 1331 00fa 52000000 		.4byte	.LVL9
+ 1332 00fe 6A000000 		.4byte	.LVL13
+ 1333 0102 0100     		.2byte	0x1
+ 1334 0104 50       		.byte	0x50
+ 1335 0105 6A000000 		.4byte	.LVL13
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 27
+
+
+ 1336 0109 82010000 		.4byte	.LVL47
+ 1337 010d 0200     		.2byte	0x2
+ 1338 010f 77       		.byte	0x77
+ 1339 0110 2C       		.sleb128 44
+ 1340 0111 82010000 		.4byte	.LVL47
+ 1341 0115 94010000 		.4byte	.LFE63
+ 1342 0119 0200     		.2byte	0x2
+ 1343 011b 91       		.byte	0x91
+ 1344 011c 7C       		.sleb128 -4
+ 1345 011d 00000000 		.4byte	0
+ 1346 0121 00000000 		.4byte	0
+ 1347              	.LLST6:
+ 1348 0125 56000000 		.4byte	.LVL10
+ 1349 0129 58000000 		.4byte	.LVL11
+ 1350 012d 0300     		.2byte	0x3
+ 1351 012f 72       		.byte	0x72
+ 1352 0130 7F       		.sleb128 -1
+ 1353 0131 9F       		.byte	0x9f
+ 1354 0132 58000000 		.4byte	.LVL11
+ 1355 0136 6D000000 		.4byte	.LVL14-1
+ 1356 013a 0600     		.2byte	0x6
+ 1357 013c 7B       		.byte	0x7b
+ 1358 013d 00       		.sleb128 0
+ 1359 013e 06       		.byte	0x6
+ 1360 013f 31       		.byte	0x31
+ 1361 0140 1C       		.byte	0x1c
+ 1362 0141 9F       		.byte	0x9f
+ 1363 0142 00000000 		.4byte	0
+ 1364 0146 00000000 		.4byte	0
+ 1365              	.LLST7:
+ 1366 014a 66000000 		.4byte	.LVL12
+ 1367 014e 88010000 		.4byte	.LVL48
+ 1368 0152 0200     		.2byte	0x2
+ 1369 0154 76       		.byte	0x76
+ 1370 0155 00       		.sleb128 0
+ 1371 0156 00000000 		.4byte	0
+ 1372 015a 00000000 		.4byte	0
+ 1373              	.LLST8:
+ 1374 015e 80000000 		.4byte	.LVL17
+ 1375 0162 86000000 		.4byte	.LVL18
+ 1376 0166 0100     		.2byte	0x1
+ 1377 0168 50       		.byte	0x50
+ 1378 0169 86000000 		.4byte	.LVL18
+ 1379 016d 96000000 		.4byte	.LVL23
+ 1380 0171 0100     		.2byte	0x1
+ 1381 0173 59       		.byte	0x59
+ 1382 0174 00000000 		.4byte	0
+ 1383 0178 00000000 		.4byte	0
+ 1384              	.LLST9:
+ 1385 017c 8C000000 		.4byte	.LVL20
+ 1386 0180 90000000 		.4byte	.LVL21
+ 1387 0184 0100     		.2byte	0x1
+ 1388 0186 50       		.byte	0x50
+ 1389 0187 90000000 		.4byte	.LVL21
+ 1390 018b AC000000 		.4byte	.LVL26
+ 1391 018f 0100     		.2byte	0x1
+ 1392 0191 58       		.byte	0x58
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 28
+
+
+ 1393 0192 00000000 		.4byte	0
+ 1394 0196 00000000 		.4byte	0
+ 1395              	.LLST10:
+ 1396 019a 00000000 		.4byte	.LVL49
+ 1397 019e 0A000000 		.4byte	.LVL51
+ 1398 01a2 0100     		.2byte	0x1
+ 1399 01a4 50       		.byte	0x50
+ 1400 01a5 0A000000 		.4byte	.LVL51
+ 1401 01a9 50000000 		.4byte	.LFE64
+ 1402 01ad 0100     		.2byte	0x1
+ 1403 01af 55       		.byte	0x55
+ 1404 01b0 00000000 		.4byte	0
+ 1405 01b4 00000000 		.4byte	0
+ 1406              	.LLST11:
+ 1407 01b8 06000000 		.4byte	.LVL50
+ 1408 01bc 0A000000 		.4byte	.LVL51
+ 1409 01c0 0200     		.2byte	0x2
+ 1410 01c2 30       		.byte	0x30
+ 1411 01c3 9F       		.byte	0x9f
+ 1412 01c4 0A000000 		.4byte	.LVL51
+ 1413 01c8 50000000 		.4byte	.LFE64
+ 1414 01cc 0100     		.2byte	0x1
+ 1415 01ce 56       		.byte	0x56
+ 1416 01cf 00000000 		.4byte	0
+ 1417 01d3 00000000 		.4byte	0
+ 1418              	.LLST12:
+ 1419 01d7 12000000 		.4byte	.LVL52
+ 1420 01db 16000000 		.4byte	.LVL53
+ 1421 01df 0100     		.2byte	0x1
+ 1422 01e1 53       		.byte	0x53
+ 1423 01e2 16000000 		.4byte	.LVL53
+ 1424 01e6 1C000000 		.4byte	.LVL55
+ 1425 01ea 0200     		.2byte	0x2
+ 1426 01ec 91       		.byte	0x91
+ 1427 01ed 64       		.sleb128 -28
+ 1428 01ee 00000000 		.4byte	0
+ 1429 01f2 00000000 		.4byte	0
+ 1430              	.LLST13:
+ 1431 01f6 18000000 		.4byte	.LVL54
+ 1432 01fa 1C000000 		.4byte	.LVL55
+ 1433 01fe 0200     		.2byte	0x2
+ 1434 0200 30       		.byte	0x30
+ 1435 0201 9F       		.byte	0x9f
+ 1436 0202 1C000000 		.4byte	.LVL55
+ 1437 0206 2A000000 		.4byte	.LVL57
+ 1438 020a 0100     		.2byte	0x1
+ 1439 020c 54       		.byte	0x54
+ 1440 020d 2C000000 		.4byte	.LVL58
+ 1441 0211 32000000 		.4byte	.LVL59
+ 1442 0215 0100     		.2byte	0x1
+ 1443 0217 54       		.byte	0x54
+ 1444 0218 00000000 		.4byte	0
+ 1445 021c 00000000 		.4byte	0
+ 1446              		.section	.debug_aranges,"",%progbits
+ 1447 0000 24000000 		.4byte	0x24
+ 1448 0004 0200     		.2byte	0x2
+ 1449 0006 00000000 		.4byte	.Ldebug_info0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 29
+
+
+ 1450 000a 04       		.byte	0x4
+ 1451 000b 00       		.byte	0
+ 1452 000c 0000     		.2byte	0
+ 1453 000e 0000     		.2byte	0
+ 1454 0010 00000000 		.4byte	.LFB63
+ 1455 0014 94010000 		.4byte	.LFE63-.LFB63
+ 1456 0018 00000000 		.4byte	.LFB64
+ 1457 001c 50000000 		.4byte	.LFE64-.LFB64
+ 1458 0020 00000000 		.4byte	0
+ 1459 0024 00000000 		.4byte	0
+ 1460              		.section	.debug_ranges,"",%progbits
+ 1461              	.Ldebug_ranges0:
+ 1462 0000 00000000 		.4byte	.LFB63
+ 1463 0004 94010000 		.4byte	.LFE63
+ 1464 0008 00000000 		.4byte	.LFB64
+ 1465 000c 50000000 		.4byte	.LFE64
+ 1466 0010 00000000 		.4byte	0
+ 1467 0014 00000000 		.4byte	0
+ 1468              		.section	.debug_line,"",%progbits
+ 1469              	.Ldebug_line0:
+ 1470 0000 9F020000 		.section	.debug_str,"MS",%progbits,1
+ 1470      0200E201 
+ 1470      00000201 
+ 1470      FB0E0D00 
+ 1470      01010101 
+ 1471              	.LASF4:
+ 1472 0000 5F5F7569 		.ascii	"__uint8_t\000"
+ 1472      6E74385F 
+ 1472      7400
+ 1473              	.LASF29:
+ 1474 000a 6666745F 		.ascii	"fft_magnitude\000"
+ 1474      6D61676E 
+ 1474      69747564 
+ 1474      6500
+ 1475              	.LASF36:
+ 1476 0018 55415254 		.ascii	"UART_LOG_PutChar\000"
+ 1476      5F4C4F47 
+ 1476      5F507574 
+ 1476      43686172 
+ 1476      00
+ 1477              	.LASF34:
+ 1478 0029 76616C75 		.ascii	"value\000"
+ 1478      6500
+ 1479              	.LASF5:
+ 1480 002f 5F5F696E 		.ascii	"__int32_t\000"
+ 1480      7433325F 
+ 1480      7400
+ 1481              	.LASF41:
+ 1482 0039 6D656D73 		.ascii	"memset\000"
+ 1482      657400
+ 1483              	.LASF3:
+ 1484 0040 73686F72 		.ascii	"short unsigned int\000"
+ 1484      7420756E 
+ 1484      7369676E 
+ 1484      65642069 
+ 1484      6E7400
+ 1485              	.LASF23:
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 30
+
+
+ 1486 0053 4646545F 		.ascii	"FFT_Cfar_Params\000"
+ 1486      43666172 
+ 1486      5F506172 
+ 1486      616D7300 
+ 1487              	.LASF22:
+ 1488 0063 43464152 		.ascii	"CFAR_filled\000"
+ 1488      5F66696C 
+ 1488      6C656400 
+ 1489              	.LASF12:
+ 1490 006f 696E7433 		.ascii	"int32_t\000"
+ 1490      325F7400 
+ 1491              	.LASF15:
+ 1492 0077 666C6F61 		.ascii	"float\000"
+ 1492      7400
+ 1493              	.LASF39:
+ 1494 007d 453A5C48 		.ascii	"E:\\HDA_Lectures\\001_Repository\\012_SDHD\\012_SDH"
+ 1494      44415F4C 
+ 1494      65637475 
+ 1494      7265735C 
+ 1494      3030315F 
+ 1495 00ac 445F4C61 		.ascii	"D_LabCodes\\Lab\\40_Implementation\\20_SW\\10_work\\"
+ 1495      62436F64 
+ 1495      65735C4C 
+ 1495      61625C34 
+ 1495      305F496D 
+ 1496 00db 53444844 		.ascii	"SDHD_WP1\\D5-RADAR_Detection.cydsn\000"
+ 1496      5F575031 
+ 1496      5C44352D 
+ 1496      52414441 
+ 1496      525F4465 
+ 1497              	.LASF1:
+ 1498 00fd 756E7369 		.ascii	"unsigned char\000"
+ 1498      676E6564 
+ 1498      20636861 
+ 1498      7200
+ 1499              	.LASF37:
+ 1500 010b 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 1500      43313120 
+ 1500      352E342E 
+ 1500      31203230 
+ 1500      31363036 
+ 1501 013e 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 1501      20726576 
+ 1501      6973696F 
+ 1501      6E203233 
+ 1501      37373135 
+ 1502 0171 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 1502      66756E63 
+ 1502      74696F6E 
+ 1502      2D736563 
+ 1502      74696F6E 
+ 1503              	.LASF7:
+ 1504 0199 6C6F6E67 		.ascii	"long unsigned int\000"
+ 1504      20756E73 
+ 1504      69676E65 
+ 1504      6420696E 
+ 1504      7400
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 31
+
+
+ 1505              	.LASF14:
+ 1506 01ab 696E7433 		.ascii	"int32\000"
+ 1506      3200
+ 1507              	.LASF40:
+ 1508 01b1 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 1508      52784275 
+ 1508      66666572 
+ 1508      00
+ 1509              	.LASF38:
+ 1510 01be 736F7572 		.ascii	"sources\\asw\\cfar.c\000"
+ 1510      6365735C 
+ 1510      6173775C 
+ 1510      63666172 
+ 1510      2E6300
+ 1511              	.LASF26:
+ 1512 01d1 70617261 		.ascii	"params\000"
+ 1512      6D7300
+ 1513              	.LASF16:
+ 1514 01d8 646F7562 		.ascii	"double\000"
+ 1514      6C6500
+ 1515              	.LASF2:
+ 1516 01df 73686F72 		.ascii	"short int\000"
+ 1516      7420696E 
+ 1516      7400
+ 1517              	.LASF31:
+ 1518 01e9 696D6167 		.ascii	"imag\000"
+ 1518      00
+ 1519              	.LASF10:
+ 1520 01ee 756E7369 		.ascii	"unsigned int\000"
+ 1520      676E6564 
+ 1520      20696E74 
+ 1520      00
+ 1521              	.LASF30:
+ 1522 01fb 7265616C 		.ascii	"real\000"
+ 1522      00
+ 1523              	.LASF9:
+ 1524 0200 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 1524      206C6F6E 
+ 1524      6720756E 
+ 1524      7369676E 
+ 1524      65642069 
+ 1525              	.LASF11:
+ 1526 0217 75696E74 		.ascii	"uint8_t\000"
+ 1526      385F7400 
+ 1527              	.LASF33:
+ 1528 021f 73656E64 		.ascii	"sendCFARData\000"
+ 1528      43464152 
+ 1528      44617461 
+ 1528      00
+ 1529              	.LASF19:
+ 1530 022c 73697A65 		.ascii	"sizetype\000"
+ 1530      74797065 
+ 1530      00
+ 1531              	.LASF8:
+ 1532 0235 6C6F6E67 		.ascii	"long long int\000"
+ 1532      206C6F6E 
+ 1532      6720696E 
+ARM GAS  C:\Users\HP\AppData\Local\Temp\cc7Hwfq7.s 			page 32
+
+
+ 1532      7400
+ 1533              	.LASF17:
+ 1534 0243 63686172 		.ascii	"char\000"
+ 1534      00
+ 1535              	.LASF21:
+ 1536 0248 74687265 		.ascii	"threshold_m\000"
+ 1536      73686F6C 
+ 1536      645F6D00 
+ 1537              	.LASF13:
+ 1538 0254 75696E74 		.ascii	"uint8\000"
+ 1538      3800
+ 1539              	.LASF25:
+ 1540 025a 4646545F 		.ascii	"FFT_Array\000"
+ 1540      41727261 
+ 1540      7900
+ 1541              	.LASF6:
+ 1542 0264 6C6F6E67 		.ascii	"long int\000"
+ 1542      20696E74 
+ 1542      00
+ 1543              	.LASF32:
+ 1544 026d 43464152 		.ascii	"CFAR\000"
+ 1544      00
+ 1545              	.LASF35:
+ 1546 0272 62797465 		.ascii	"bytes\000"
+ 1546      7300
+ 1547              	.LASF18:
+ 1548 0278 6C6F6E67 		.ascii	"long double\000"
+ 1548      20646F75 
+ 1548      626C6500 
+ 1549              	.LASF0:
+ 1550 0284 7369676E 		.ascii	"signed char\000"
+ 1550      65642063 
+ 1550      68617200 
+ 1551              	.LASF28:
+ 1552 0290 616C7068 		.ascii	"alpha\000"
+ 1552      6100
+ 1553              	.LASF24:
+ 1554 0296 4646545F 		.ascii	"FFT_CFAR_t\000"
+ 1554      43464152 
+ 1554      5F7400
+ 1555              	.LASF20:
+ 1556 02a1 64657465 		.ascii	"detections\000"
+ 1556      6374696F 
+ 1556      6E7300
+ 1557              	.LASF27:
+ 1558 02ac 6E6F6973 		.ascii	"noise_level_m\000"
+ 1558      655F6C65 
+ 1558      76656C5F 
+ 1558      6D00
+ 1559              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran

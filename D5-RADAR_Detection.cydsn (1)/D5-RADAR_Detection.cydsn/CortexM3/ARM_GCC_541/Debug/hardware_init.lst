@@ -1,0 +1,636 @@
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"hardware_init.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.initializeHardware,"ax",%progbits
+  20              		.align	2
+  21              		.global	initializeHardware
+  22              		.thumb
+  23              		.thumb_func
+  24              		.type	initializeHardware, %function
+  25              	initializeHardware:
+  26              	.LFB63:
+  27              		.file 1 "sources\\bsw\\hardware_init.c"
+   1:sources\bsw/hardware_init.c **** /**
+   2:sources\bsw/hardware_init.c ****  * @file hardware_init.c
+   3:sources\bsw/hardware_init.c ****  * @brief Hardware initialization implementation file.
+   4:sources\bsw/hardware_init.c ****  * This file contains the implementation of the hardware initialization function.
+   5:sources\bsw/hardware_init.c ****  */
+   6:sources\bsw/hardware_init.c **** 
+   7:sources\bsw/hardware_init.c **** #include "project.h"
+   8:sources\bsw/hardware_init.c **** #include "hardware_init.h"
+   9:sources\bsw/hardware_init.c **** 
+  10:sources\bsw/hardware_init.c **** /**
+  11:sources\bsw/hardware_init.c ****  * @brief Initialize hardware.
+  12:sources\bsw/hardware_init.c ****  *
+  13:sources\bsw/hardware_init.c ****  * This function initializes the hardware components required for the application.
+  14:sources\bsw/hardware_init.c ****  * It starts the UART for logging, the WaveDAC8 for waveform generation, and the ADC for analog-to-
+  15:sources\bsw/hardware_init.c ****  * It also sets the initial state of the LED indicators to off.
+  16:sources\bsw/hardware_init.c ****  *
+  17:sources\bsw/hardware_init.c ****  * @return void
+  18:sources\bsw/hardware_init.c ****  */
+  19:sources\bsw/hardware_init.c **** void initializeHardware(void)
+  20:sources\bsw/hardware_init.c **** {
+  28              		.loc 1 20 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 08B5     		push	{r3, lr}
+  33              		.cfi_def_cfa_offset 8
+  34              		.cfi_offset 3, -8
+  35              		.cfi_offset 14, -4
+  21:sources\bsw/hardware_init.c ****     UART_LOG_Start();
+  36              		.loc 1 21 0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 2
+
+
+  37 0002 FFF7FEFF 		bl	UART_LOG_Start
+  38              	.LVL0:
+  22:sources\bsw/hardware_init.c ****     WaveDAC8_Start();
+  39              		.loc 1 22 0
+  40 0006 FFF7FEFF 		bl	WaveDAC8_Start
+  41              	.LVL1:
+  23:sources\bsw/hardware_init.c ****     ADC_Start();
+  42              		.loc 1 23 0
+  43 000a FFF7FEFF 		bl	ADC_Start
+  44              	.LVL2:
+  24:sources\bsw/hardware_init.c ****     
+  25:sources\bsw/hardware_init.c ****     Green_LED_Write(0);
+  45              		.loc 1 25 0
+  46 000e 0020     		movs	r0, #0
+  47 0010 FFF7FEFF 		bl	Green_LED_Write
+  48              	.LVL3:
+  26:sources\bsw/hardware_init.c ****     Red_LED_Write(0);
+  49              		.loc 1 26 0
+  50 0014 0020     		movs	r0, #0
+  51 0016 FFF7FEFF 		bl	Red_LED_Write
+  52              	.LVL4:
+  27:sources\bsw/hardware_init.c ****     Yellow_LED_Write(0);
+  53              		.loc 1 27 0
+  54 001a 0020     		movs	r0, #0
+  55 001c FFF7FEFF 		bl	Yellow_LED_Write
+  56              	.LVL5:
+  57 0020 08BD     		pop	{r3, pc}
+  58              		.cfi_endproc
+  59              	.LFE63:
+  60              		.size	initializeHardware, .-initializeHardware
+  61 0022 00BF     		.text
+  62              	.Letext0:
+  63              		.file 2 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+  64              		.file 3 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+  65              		.file 4 "Generated_Source\\PSoC5/UART_LOG.h"
+  66              		.file 5 "Generated_Source\\PSoC5/WaveDAC8.h"
+  67              		.file 6 "Generated_Source\\PSoC5/ADC.h"
+  68              		.file 7 "Generated_Source\\PSoC5/Green_LED.h"
+  69              		.file 8 "Generated_Source\\PSoC5/Red_LED.h"
+  70              		.file 9 "Generated_Source\\PSoC5/Yellow_LED.h"
+  71              		.file 10 "Generated_Source\\PSoC5/core_cm3.h"
+  72              		.section	.debug_info,"",%progbits
+  73              	.Ldebug_info0:
+  74 0000 5A010000 		.4byte	0x15a
+  75 0004 0400     		.2byte	0x4
+  76 0006 00000000 		.4byte	.Ldebug_abbrev0
+  77 000a 04       		.byte	0x4
+  78 000b 01       		.uleb128 0x1
+  79 000c E0000000 		.4byte	.LASF22
+  80 0010 0C       		.byte	0xc
+  81 0011 80010000 		.4byte	.LASF23
+  82 0015 3E000000 		.4byte	.LASF24
+  83 0019 00000000 		.4byte	.Ldebug_ranges0+0
+  84 001d 00000000 		.4byte	0
+  85 0021 00000000 		.4byte	.Ldebug_line0
+  86 0025 02       		.uleb128 0x2
+  87 0026 01       		.byte	0x1
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 3
+
+
+  88 0027 06       		.byte	0x6
+  89 0028 F1010000 		.4byte	.LASF0
+  90 002c 02       		.uleb128 0x2
+  91 002d 01       		.byte	0x1
+  92 002e 08       		.byte	0x8
+  93 002f B3010000 		.4byte	.LASF1
+  94 0033 02       		.uleb128 0x2
+  95 0034 02       		.byte	0x2
+  96 0035 05       		.byte	0x5
+  97 0036 23020000 		.4byte	.LASF2
+  98 003a 02       		.uleb128 0x2
+  99 003b 02       		.byte	0x2
+ 100 003c 07       		.byte	0x7
+ 101 003d 0E000000 		.4byte	.LASF3
+ 102 0041 03       		.uleb128 0x3
+ 103 0042 09020000 		.4byte	.LASF9
+ 104 0046 02       		.byte	0x2
+ 105 0047 3F       		.byte	0x3f
+ 106 0048 4C000000 		.4byte	0x4c
+ 107 004c 02       		.uleb128 0x2
+ 108 004d 04       		.byte	0x4
+ 109 004e 05       		.byte	0x5
+ 110 004f C6010000 		.4byte	.LASF4
+ 111 0053 02       		.uleb128 0x2
+ 112 0054 04       		.byte	0x4
+ 113 0055 07       		.byte	0x7
+ 114 0056 6E010000 		.4byte	.LASF5
+ 115 005a 02       		.uleb128 0x2
+ 116 005b 08       		.byte	0x8
+ 117 005c 05       		.byte	0x5
+ 118 005d 00000000 		.4byte	.LASF6
+ 119 0061 02       		.uleb128 0x2
+ 120 0062 08       		.byte	0x8
+ 121 0063 07       		.byte	0x7
+ 122 0064 9C010000 		.4byte	.LASF7
+ 123 0068 04       		.uleb128 0x4
+ 124 0069 04       		.byte	0x4
+ 125 006a 05       		.byte	0x5
+ 126 006b 696E7400 		.ascii	"int\000"
+ 127 006f 02       		.uleb128 0x2
+ 128 0070 04       		.byte	0x4
+ 129 0071 07       		.byte	0x7
+ 130 0072 31000000 		.4byte	.LASF8
+ 131 0076 03       		.uleb128 0x3
+ 132 0077 2D020000 		.4byte	.LASF10
+ 133 007b 03       		.byte	0x3
+ 134 007c 2C       		.byte	0x2c
+ 135 007d 41000000 		.4byte	0x41
+ 136 0081 02       		.uleb128 0x2
+ 137 0082 04       		.byte	0x4
+ 138 0083 04       		.byte	0x4
+ 139 0084 13020000 		.4byte	.LASF11
+ 140 0088 02       		.uleb128 0x2
+ 141 0089 08       		.byte	0x8
+ 142 008a 04       		.byte	0x4
+ 143 008b DD010000 		.4byte	.LASF12
+ 144 008f 02       		.uleb128 0x2
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 4
+
+
+ 145 0090 01       		.byte	0x1
+ 146 0091 08       		.byte	0x8
+ 147 0092 C1010000 		.4byte	.LASF13
+ 148 0096 02       		.uleb128 0x2
+ 149 0097 08       		.byte	0x8
+ 150 0098 04       		.byte	0x4
+ 151 0099 FD010000 		.4byte	.LASF14
+ 152 009d 02       		.uleb128 0x2
+ 153 009e 04       		.byte	0x4
+ 154 009f 07       		.byte	0x7
+ 155 00a0 46020000 		.4byte	.LASF15
+ 156 00a4 05       		.uleb128 0x5
+ 157 00a5 BE000000 		.4byte	.LASF25
+ 158 00a9 01       		.byte	0x1
+ 159 00aa 13       		.byte	0x13
+ 160 00ab 00000000 		.4byte	.LFB63
+ 161 00af 22000000 		.4byte	.LFE63-.LFB63
+ 162 00b3 01       		.uleb128 0x1
+ 163 00b4 9C       		.byte	0x9c
+ 164 00b5 0A010000 		.4byte	0x10a
+ 165 00b9 06       		.uleb128 0x6
+ 166 00ba 06000000 		.4byte	.LVL0
+ 167 00be 1B010000 		.4byte	0x11b
+ 168 00c2 06       		.uleb128 0x6
+ 169 00c3 0A000000 		.4byte	.LVL1
+ 170 00c7 26010000 		.4byte	0x126
+ 171 00cb 06       		.uleb128 0x6
+ 172 00cc 0E000000 		.4byte	.LVL2
+ 173 00d0 31010000 		.4byte	0x131
+ 174 00d4 07       		.uleb128 0x7
+ 175 00d5 14000000 		.4byte	.LVL3
+ 176 00d9 3C010000 		.4byte	0x13c
+ 177 00dd E7000000 		.4byte	0xe7
+ 178 00e1 08       		.uleb128 0x8
+ 179 00e2 01       		.uleb128 0x1
+ 180 00e3 50       		.byte	0x50
+ 181 00e4 01       		.uleb128 0x1
+ 182 00e5 30       		.byte	0x30
+ 183 00e6 00       		.byte	0
+ 184 00e7 07       		.uleb128 0x7
+ 185 00e8 1A000000 		.4byte	.LVL4
+ 186 00ec 47010000 		.4byte	0x147
+ 187 00f0 FA000000 		.4byte	0xfa
+ 188 00f4 08       		.uleb128 0x8
+ 189 00f5 01       		.uleb128 0x1
+ 190 00f6 50       		.byte	0x50
+ 191 00f7 01       		.uleb128 0x1
+ 192 00f8 30       		.byte	0x30
+ 193 00f9 00       		.byte	0
+ 194 00fa 09       		.uleb128 0x9
+ 195 00fb 20000000 		.4byte	.LVL5
+ 196 00ff 52010000 		.4byte	0x152
+ 197 0103 08       		.uleb128 0x8
+ 198 0104 01       		.uleb128 0x1
+ 199 0105 50       		.byte	0x50
+ 200 0106 01       		.uleb128 0x1
+ 201 0107 30       		.byte	0x30
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 5
+
+
+ 202 0108 00       		.byte	0
+ 203 0109 00       		.byte	0
+ 204 010a 0A       		.uleb128 0xa
+ 205 010b E4010000 		.4byte	.LASF26
+ 206 010f 0A       		.byte	0xa
+ 207 0110 1207     		.2byte	0x712
+ 208 0112 16010000 		.4byte	0x116
+ 209 0116 0B       		.uleb128 0xb
+ 210 0117 76000000 		.4byte	0x76
+ 211 011b 0C       		.uleb128 0xc
+ 212 011c 4F020000 		.4byte	.LASF16
+ 213 0120 4F020000 		.4byte	.LASF16
+ 214 0124 04       		.byte	0x4
+ 215 0125 54       		.byte	0x54
+ 216 0126 0C       		.uleb128 0xc
+ 217 0127 D1000000 		.4byte	.LASF17
+ 218 012b D1000000 		.4byte	.LASF17
+ 219 012f 05       		.byte	0x5
+ 220 0130 67       		.byte	0x67
+ 221 0131 0C       		.uleb128 0xc
+ 222 0132 19020000 		.4byte	.LASF18
+ 223 0136 19020000 		.4byte	.LASF18
+ 224 013a 06       		.byte	0x6
+ 225 013b 3A       		.byte	0x3a
+ 226 013c 0C       		.uleb128 0xc
+ 227 013d 21000000 		.4byte	.LASF19
+ 228 0141 21000000 		.4byte	.LASF19
+ 229 0145 07       		.byte	0x7
+ 230 0146 26       		.byte	0x26
+ 231 0147 0C       		.uleb128 0xc
+ 232 0148 CF010000 		.4byte	.LASF20
+ 233 014c CF010000 		.4byte	.LASF20
+ 234 0150 08       		.byte	0x8
+ 235 0151 26       		.byte	0x26
+ 236 0152 0C       		.uleb128 0xc
+ 237 0153 35020000 		.4byte	.LASF21
+ 238 0157 35020000 		.4byte	.LASF21
+ 239 015b 09       		.byte	0x9
+ 240 015c 26       		.byte	0x26
+ 241 015d 00       		.byte	0
+ 242              		.section	.debug_abbrev,"",%progbits
+ 243              	.Ldebug_abbrev0:
+ 244 0000 01       		.uleb128 0x1
+ 245 0001 11       		.uleb128 0x11
+ 246 0002 01       		.byte	0x1
+ 247 0003 25       		.uleb128 0x25
+ 248 0004 0E       		.uleb128 0xe
+ 249 0005 13       		.uleb128 0x13
+ 250 0006 0B       		.uleb128 0xb
+ 251 0007 03       		.uleb128 0x3
+ 252 0008 0E       		.uleb128 0xe
+ 253 0009 1B       		.uleb128 0x1b
+ 254 000a 0E       		.uleb128 0xe
+ 255 000b 55       		.uleb128 0x55
+ 256 000c 17       		.uleb128 0x17
+ 257 000d 11       		.uleb128 0x11
+ 258 000e 01       		.uleb128 0x1
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 6
+
+
+ 259 000f 10       		.uleb128 0x10
+ 260 0010 17       		.uleb128 0x17
+ 261 0011 00       		.byte	0
+ 262 0012 00       		.byte	0
+ 263 0013 02       		.uleb128 0x2
+ 264 0014 24       		.uleb128 0x24
+ 265 0015 00       		.byte	0
+ 266 0016 0B       		.uleb128 0xb
+ 267 0017 0B       		.uleb128 0xb
+ 268 0018 3E       		.uleb128 0x3e
+ 269 0019 0B       		.uleb128 0xb
+ 270 001a 03       		.uleb128 0x3
+ 271 001b 0E       		.uleb128 0xe
+ 272 001c 00       		.byte	0
+ 273 001d 00       		.byte	0
+ 274 001e 03       		.uleb128 0x3
+ 275 001f 16       		.uleb128 0x16
+ 276 0020 00       		.byte	0
+ 277 0021 03       		.uleb128 0x3
+ 278 0022 0E       		.uleb128 0xe
+ 279 0023 3A       		.uleb128 0x3a
+ 280 0024 0B       		.uleb128 0xb
+ 281 0025 3B       		.uleb128 0x3b
+ 282 0026 0B       		.uleb128 0xb
+ 283 0027 49       		.uleb128 0x49
+ 284 0028 13       		.uleb128 0x13
+ 285 0029 00       		.byte	0
+ 286 002a 00       		.byte	0
+ 287 002b 04       		.uleb128 0x4
+ 288 002c 24       		.uleb128 0x24
+ 289 002d 00       		.byte	0
+ 290 002e 0B       		.uleb128 0xb
+ 291 002f 0B       		.uleb128 0xb
+ 292 0030 3E       		.uleb128 0x3e
+ 293 0031 0B       		.uleb128 0xb
+ 294 0032 03       		.uleb128 0x3
+ 295 0033 08       		.uleb128 0x8
+ 296 0034 00       		.byte	0
+ 297 0035 00       		.byte	0
+ 298 0036 05       		.uleb128 0x5
+ 299 0037 2E       		.uleb128 0x2e
+ 300 0038 01       		.byte	0x1
+ 301 0039 3F       		.uleb128 0x3f
+ 302 003a 19       		.uleb128 0x19
+ 303 003b 03       		.uleb128 0x3
+ 304 003c 0E       		.uleb128 0xe
+ 305 003d 3A       		.uleb128 0x3a
+ 306 003e 0B       		.uleb128 0xb
+ 307 003f 3B       		.uleb128 0x3b
+ 308 0040 0B       		.uleb128 0xb
+ 309 0041 27       		.uleb128 0x27
+ 310 0042 19       		.uleb128 0x19
+ 311 0043 11       		.uleb128 0x11
+ 312 0044 01       		.uleb128 0x1
+ 313 0045 12       		.uleb128 0x12
+ 314 0046 06       		.uleb128 0x6
+ 315 0047 40       		.uleb128 0x40
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 7
+
+
+ 316 0048 18       		.uleb128 0x18
+ 317 0049 9742     		.uleb128 0x2117
+ 318 004b 19       		.uleb128 0x19
+ 319 004c 01       		.uleb128 0x1
+ 320 004d 13       		.uleb128 0x13
+ 321 004e 00       		.byte	0
+ 322 004f 00       		.byte	0
+ 323 0050 06       		.uleb128 0x6
+ 324 0051 898201   		.uleb128 0x4109
+ 325 0054 00       		.byte	0
+ 326 0055 11       		.uleb128 0x11
+ 327 0056 01       		.uleb128 0x1
+ 328 0057 31       		.uleb128 0x31
+ 329 0058 13       		.uleb128 0x13
+ 330 0059 00       		.byte	0
+ 331 005a 00       		.byte	0
+ 332 005b 07       		.uleb128 0x7
+ 333 005c 898201   		.uleb128 0x4109
+ 334 005f 01       		.byte	0x1
+ 335 0060 11       		.uleb128 0x11
+ 336 0061 01       		.uleb128 0x1
+ 337 0062 31       		.uleb128 0x31
+ 338 0063 13       		.uleb128 0x13
+ 339 0064 01       		.uleb128 0x1
+ 340 0065 13       		.uleb128 0x13
+ 341 0066 00       		.byte	0
+ 342 0067 00       		.byte	0
+ 343 0068 08       		.uleb128 0x8
+ 344 0069 8A8201   		.uleb128 0x410a
+ 345 006c 00       		.byte	0
+ 346 006d 02       		.uleb128 0x2
+ 347 006e 18       		.uleb128 0x18
+ 348 006f 9142     		.uleb128 0x2111
+ 349 0071 18       		.uleb128 0x18
+ 350 0072 00       		.byte	0
+ 351 0073 00       		.byte	0
+ 352 0074 09       		.uleb128 0x9
+ 353 0075 898201   		.uleb128 0x4109
+ 354 0078 01       		.byte	0x1
+ 355 0079 11       		.uleb128 0x11
+ 356 007a 01       		.uleb128 0x1
+ 357 007b 31       		.uleb128 0x31
+ 358 007c 13       		.uleb128 0x13
+ 359 007d 00       		.byte	0
+ 360 007e 00       		.byte	0
+ 361 007f 0A       		.uleb128 0xa
+ 362 0080 34       		.uleb128 0x34
+ 363 0081 00       		.byte	0
+ 364 0082 03       		.uleb128 0x3
+ 365 0083 0E       		.uleb128 0xe
+ 366 0084 3A       		.uleb128 0x3a
+ 367 0085 0B       		.uleb128 0xb
+ 368 0086 3B       		.uleb128 0x3b
+ 369 0087 05       		.uleb128 0x5
+ 370 0088 49       		.uleb128 0x49
+ 371 0089 13       		.uleb128 0x13
+ 372 008a 3F       		.uleb128 0x3f
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 8
+
+
+ 373 008b 19       		.uleb128 0x19
+ 374 008c 3C       		.uleb128 0x3c
+ 375 008d 19       		.uleb128 0x19
+ 376 008e 00       		.byte	0
+ 377 008f 00       		.byte	0
+ 378 0090 0B       		.uleb128 0xb
+ 379 0091 35       		.uleb128 0x35
+ 380 0092 00       		.byte	0
+ 381 0093 49       		.uleb128 0x49
+ 382 0094 13       		.uleb128 0x13
+ 383 0095 00       		.byte	0
+ 384 0096 00       		.byte	0
+ 385 0097 0C       		.uleb128 0xc
+ 386 0098 2E       		.uleb128 0x2e
+ 387 0099 00       		.byte	0
+ 388 009a 3F       		.uleb128 0x3f
+ 389 009b 19       		.uleb128 0x19
+ 390 009c 3C       		.uleb128 0x3c
+ 391 009d 19       		.uleb128 0x19
+ 392 009e 6E       		.uleb128 0x6e
+ 393 009f 0E       		.uleb128 0xe
+ 394 00a0 03       		.uleb128 0x3
+ 395 00a1 0E       		.uleb128 0xe
+ 396 00a2 3A       		.uleb128 0x3a
+ 397 00a3 0B       		.uleb128 0xb
+ 398 00a4 3B       		.uleb128 0x3b
+ 399 00a5 0B       		.uleb128 0xb
+ 400 00a6 00       		.byte	0
+ 401 00a7 00       		.byte	0
+ 402 00a8 00       		.byte	0
+ 403              		.section	.debug_aranges,"",%progbits
+ 404 0000 1C000000 		.4byte	0x1c
+ 405 0004 0200     		.2byte	0x2
+ 406 0006 00000000 		.4byte	.Ldebug_info0
+ 407 000a 04       		.byte	0x4
+ 408 000b 00       		.byte	0
+ 409 000c 0000     		.2byte	0
+ 410 000e 0000     		.2byte	0
+ 411 0010 00000000 		.4byte	.LFB63
+ 412 0014 22000000 		.4byte	.LFE63-.LFB63
+ 413 0018 00000000 		.4byte	0
+ 414 001c 00000000 		.4byte	0
+ 415              		.section	.debug_ranges,"",%progbits
+ 416              	.Ldebug_ranges0:
+ 417 0000 00000000 		.4byte	.LFB63
+ 418 0004 22000000 		.4byte	.LFE63
+ 419 0008 00000000 		.4byte	0
+ 420 000c 00000000 		.4byte	0
+ 421              		.section	.debug_line,"",%progbits
+ 422              	.Ldebug_line0:
+ 423 0000 C0010000 		.section	.debug_str,"MS",%progbits,1
+ 423      0200A501 
+ 423      00000201 
+ 423      FB0E0D00 
+ 423      01010101 
+ 424              	.LASF6:
+ 425 0000 6C6F6E67 		.ascii	"long long int\000"
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 9
+
+
+ 425      206C6F6E 
+ 425      6720696E 
+ 425      7400
+ 426              	.LASF3:
+ 427 000e 73686F72 		.ascii	"short unsigned int\000"
+ 427      7420756E 
+ 427      7369676E 
+ 427      65642069 
+ 427      6E7400
+ 428              	.LASF19:
+ 429 0021 47726565 		.ascii	"Green_LED_Write\000"
+ 429      6E5F4C45 
+ 429      445F5772 
+ 429      69746500 
+ 430              	.LASF8:
+ 431 0031 756E7369 		.ascii	"unsigned int\000"
+ 431      676E6564 
+ 431      20696E74 
+ 431      00
+ 432              	.LASF24:
+ 433 003e 453A5C48 		.ascii	"E:\\HDA_Lectures\\001_Repository\\012_SDHD\\012_SDH"
+ 433      44415F4C 
+ 433      65637475 
+ 433      7265735C 
+ 433      3030315F 
+ 434 006d 445F4C61 		.ascii	"D_LabCodes\\Lab\\40_Implementation\\20_SW\\10_work\\"
+ 434      62436F64 
+ 434      65735C4C 
+ 434      61625C34 
+ 434      305F496D 
+ 435 009c 53444844 		.ascii	"SDHD_WP1\\D5-RADAR_Detection.cydsn\000"
+ 435      5F575031 
+ 435      5C44352D 
+ 435      52414441 
+ 435      525F4465 
+ 436              	.LASF25:
+ 437 00be 696E6974 		.ascii	"initializeHardware\000"
+ 437      69616C69 
+ 437      7A654861 
+ 437      72647761 
+ 437      726500
+ 438              	.LASF17:
+ 439 00d1 57617665 		.ascii	"WaveDAC8_Start\000"
+ 439      44414338 
+ 439      5F537461 
+ 439      727400
+ 440              	.LASF22:
+ 441 00e0 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 441      43313120 
+ 441      352E342E 
+ 441      31203230 
+ 441      31363036 
+ 442 0113 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 442      20726576 
+ 442      6973696F 
+ 442      6E203233 
+ 442      37373135 
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 10
+
+
+ 443 0146 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 443      66756E63 
+ 443      74696F6E 
+ 443      2D736563 
+ 443      74696F6E 
+ 444              	.LASF5:
+ 445 016e 6C6F6E67 		.ascii	"long unsigned int\000"
+ 445      20756E73 
+ 445      69676E65 
+ 445      6420696E 
+ 445      7400
+ 446              	.LASF23:
+ 447 0180 736F7572 		.ascii	"sources\\bsw\\hardware_init.c\000"
+ 447      6365735C 
+ 447      6273775C 
+ 447      68617264 
+ 447      77617265 
+ 448              	.LASF7:
+ 449 019c 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 449      206C6F6E 
+ 449      6720756E 
+ 449      7369676E 
+ 449      65642069 
+ 450              	.LASF1:
+ 451 01b3 756E7369 		.ascii	"unsigned char\000"
+ 451      676E6564 
+ 451      20636861 
+ 451      7200
+ 452              	.LASF13:
+ 453 01c1 63686172 		.ascii	"char\000"
+ 453      00
+ 454              	.LASF4:
+ 455 01c6 6C6F6E67 		.ascii	"long int\000"
+ 455      20696E74 
+ 455      00
+ 456              	.LASF20:
+ 457 01cf 5265645F 		.ascii	"Red_LED_Write\000"
+ 457      4C45445F 
+ 457      57726974 
+ 457      6500
+ 458              	.LASF12:
+ 459 01dd 646F7562 		.ascii	"double\000"
+ 459      6C6500
+ 460              	.LASF26:
+ 461 01e4 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 461      52784275 
+ 461      66666572 
+ 461      00
+ 462              	.LASF0:
+ 463 01f1 7369676E 		.ascii	"signed char\000"
+ 463      65642063 
+ 463      68617200 
+ 464              	.LASF14:
+ 465 01fd 6C6F6E67 		.ascii	"long double\000"
+ 465      20646F75 
+ 465      626C6500 
+ 466              	.LASF9:
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccVbT2Le.s 			page 11
+
+
+ 467 0209 5F5F696E 		.ascii	"__int32_t\000"
+ 467      7433325F 
+ 467      7400
+ 468              	.LASF11:
+ 469 0213 666C6F61 		.ascii	"float\000"
+ 469      7400
+ 470              	.LASF18:
+ 471 0219 4144435F 		.ascii	"ADC_Start\000"
+ 471      53746172 
+ 471      7400
+ 472              	.LASF2:
+ 473 0223 73686F72 		.ascii	"short int\000"
+ 473      7420696E 
+ 473      7400
+ 474              	.LASF10:
+ 475 022d 696E7433 		.ascii	"int32_t\000"
+ 475      325F7400 
+ 476              	.LASF21:
+ 477 0235 59656C6C 		.ascii	"Yellow_LED_Write\000"
+ 477      6F775F4C 
+ 477      45445F57 
+ 477      72697465 
+ 477      00
+ 478              	.LASF15:
+ 479 0246 73697A65 		.ascii	"sizetype\000"
+ 479      74797065 
+ 479      00
+ 480              	.LASF16:
+ 481 024f 55415254 		.ascii	"UART_LOG_Start\000"
+ 481      5F4C4F47 
+ 481      5F537461 
+ 481      727400
+ 482              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran

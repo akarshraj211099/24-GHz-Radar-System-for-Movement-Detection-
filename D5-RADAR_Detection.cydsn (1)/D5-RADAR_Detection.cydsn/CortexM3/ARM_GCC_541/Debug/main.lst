@@ -1,0 +1,1308 @@
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"main.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.main,"ax",%progbits
+  20              		.align	2
+  21              		.global	main
+  22              		.thumb
+  23              		.thumb_func
+  24              		.type	main, %function
+  25              	main:
+  26              	.LFB64:
+  27              		.file 1 "sources\\asw\\main.c"
+   1:sources\asw/main.c **** /**
+   2:sources\asw/main.c ****  * @file main.c
+   3:sources\asw/main.c ****  * @brief Main application file.
+   4:sources\asw/main.c ****  * This file contains the main function and the main loop.
+   5:sources\asw/main.c ****  * @author Soumya Ranjan Sabat (127993), Akarsh Vijetha Raj (1127916)
+   6:sources\asw/main.c ****  *
+   7:sources\asw/main.c ****  * @revision history
+   8:sources\asw/main.c ****  * 29-05-2024 : Initial Version
+   9:sources\asw/main.c ****  * 30-05-2024 : Updated the code to modular, MATLAB script updated
+  10:sources\asw/main.c ****  * 31-05-2024 : Added the FFT library for compilation, preliminary FFT computation
+  11:sources\asw/main.c ****  * 09-07-2024 : Added the CFAR implmentation, updated code as per review comments
+  12:sources\asw/main.c ****  */
+  13:sources\asw/main.c **** 
+  14:sources\asw/main.c **** #include <stdio.h>
+  15:sources\asw/main.c **** #include <stdlib.h>
+  16:sources\asw/main.c **** #include "project.h"
+  17:sources\asw/main.c **** #include "state_machine.h"
+  18:sources\asw/main.c **** #include "interrupt_handlers.h"
+  19:sources\asw/main.c **** #include "hardware_init.h"
+  20:sources\asw/main.c **** #include "cfar.h"
+  21:sources\asw/main.c **** 
+  22:sources\asw/main.c **** /* Global variable to toggle button state*/
+  23:sources\asw/main.c **** volatile uint8_t buttonToggle = 0; 
+  24:sources\asw/main.c **** 
+  25:sources\asw/main.c **** /* Global varriable imitate sending of character O on UART */
+  26:sources\asw/main.c **** #if((DEBUG_CHO == 1) && (DEBUG_ON == 1))
+  27:sources\asw/main.c ****     volatile uint8_t buttonPBchO;
+  28:sources\asw/main.c **** #endif
+  29:sources\asw/main.c **** 
+  30:sources\asw/main.c **** /* Global state machine instance */
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 2
+
+
+  31:sources\asw/main.c **** StateMachine_t stateMachine = {
+  32:sources\asw/main.c ****     
+  33:sources\asw/main.c ****     /* State_t currentState */
+  34:sources\asw/main.c ****     STATE_IDLE, 
+  35:sources\asw/main.c ****     
+  36:sources\asw/main.c ****     /* uint8_t startSampleCommand */
+  37:sources\asw/main.c ****     0, 
+  38:sources\asw/main.c ****     
+  39:sources\asw/main.c ****     /* uint8_t continueSampleCommand */
+  40:sources\asw/main.c ****     0, 
+  41:sources\asw/main.c ****     
+  42:sources\asw/main.c ****     /* uint16_t adcResults[1024] */
+  43:sources\asw/main.c ****     {0}, 
+  44:sources\asw/main.c ****     
+  45:sources\asw/main.c ****     /* uint8_t sampleCount */
+  46:sources\asw/main.c ****     0,
+  47:sources\asw/main.c ****     
+  48:sources\asw/main.c ****     /* int32_t FFT_Array */
+  49:sources\asw/main.c ****     #if(USE_FFT_LIB == 1)
+  50:sources\asw/main.c ****     {0}   
+  51:sources\asw/main.c ****     #endif
+  52:sources\asw/main.c **** };
+  53:sources\asw/main.c **** 
+  54:sources\asw/main.c **** /* Global CFAR Parameter instance */
+  55:sources\asw/main.c **** FFT_CFAR_t cfarParameters = {
+  56:sources\asw/main.c ****     
+  57:sources\asw/main.c ****     /* int N                    Total number of FFT points */
+  58:sources\asw/main.c ****     BUFFER_SIZE,
+  59:sources\asw/main.c ****     
+  60:sources\asw/main.c ****     /* int NR                   Number of reference cells on each side */
+  61:sources\asw/main.c ****     5,
+  62:sources\asw/main.c ****     
+  63:sources\asw/main.c ****     /* int NG                   Number of guard cells on each side */
+  64:sources\asw/main.c ****     1,
+  65:sources\asw/main.c ****     
+  66:sources\asw/main.c ****     /* float PFA                Probability of False Alarm */
+  67:sources\asw/main.c ****     1e-6,
+  68:sources\asw/main.c ****     
+  69:sources\asw/main.c ****     /* uint8 detections[1024]   Array to hold object detection status for 1024 samples */
+  70:sources\asw/main.c ****     {0},
+  71:sources\asw/main.c ****     
+  72:sources\asw/main.c ****     /* float threshold_m[1024]  Aaray to hold the threshold value for 1024 samples */
+  73:sources\asw/main.c ****     {0},
+  74:sources\asw/main.c ****     
+  75:sources\asw/main.c ****     /* int CFAR_filled          Number of filled CFAR entries */
+  76:sources\asw/main.c ****     0
+  77:sources\asw/main.c **** };
+  78:sources\asw/main.c **** 
+  79:sources\asw/main.c **** /**
+  80:sources\asw/main.c ****  * @brief Main function
+  81:sources\asw/main.c ****  * 
+  82:sources\asw/main.c ****  * This is the entry point of the application. It initializes the hardware and runs the state machi
+  83:sources\asw/main.c ****  * The function enables global interrupts, initializes UART interrupt service routine, 
+  84:sources\asw/main.c ****  * and optionally initializes a debug push button interrupt service routine based on configuration.
+  85:sources\asw/main.c ****  * It then enters an infinite loop, running the state machine to handle various states of the appli
+  86:sources\asw/main.c ****  *
+  87:sources\asw/main.c ****  * @return int Returns 0 upon successful execution (though this return value is typically not reach
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 3
+
+
+  88:sources\asw/main.c ****  */
+  89:sources\asw/main.c **** int main(void)
+  90:sources\asw/main.c **** {
+  28              		.loc 1 90 0
+  29              		.cfi_startproc
+  30              		@ Volatile: function does not return.
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33 0000 08B5     		push	{r3, lr}
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 3, -8
+  36              		.cfi_offset 14, -4
+  91:sources\asw/main.c ****     CyGlobalIntEnable; /* Enable global interrupts. */
+  37              		.loc 1 91 0
+  38              		.syntax unified
+  39              	@ 91 "sources\asw\main.c" 1
+  40 0002 62B6     		CPSIE   i
+  41              	@ 0 "" 2
+  92:sources\asw/main.c ****     
+  93:sources\asw/main.c ****     ISR_UART_StartEx(ISR_UARTReceive);  
+  42              		.loc 1 93 0
+  43              		.thumb
+  44              		.syntax unified
+  45 0004 0E48     		ldr	r0, .L9
+  46 0006 FFF7FEFF 		bl	ISR_UART_StartEx
+  47              	.LVL0:
+  94:sources\asw/main.c ****     
+  95:sources\asw/main.c ****     #if((DEBUG_CHO == 1) && (DEBUG_ON == 1))
+  96:sources\asw/main.c ****         ISR_PB_chO_StartEx(ISR_PB_chO);
+  97:sources\asw/main.c ****     #endif
+  98:sources\asw/main.c ****     
+  99:sources\asw/main.c ****     initializeHardware();
+  48              		.loc 1 99 0
+  49 000a FFF7FEFF 		bl	initializeHardware
+  50              	.LVL1:
+ 100:sources\asw/main.c **** 
+ 101:sources\asw/main.c ****     #if (DEBUG_ON == 1)
+ 102:sources\asw/main.c ****         UART_LOG_PutString("Started\n");
+ 103:sources\asw/main.c ****     #endif
+ 104:sources\asw/main.c ****     User_LED_Write(1);
+  51              		.loc 1 104 0
+  52 000e 0120     		movs	r0, #1
+  53 0010 FFF7FEFF 		bl	User_LED_Write
+  54              	.LVL2:
+  55              	.L3:
+ 105:sources\asw/main.c ****     for(;;)
+ 106:sources\asw/main.c ****     {
+ 107:sources\asw/main.c ****         switch(stateMachine.currentState)
+  56              		.loc 1 107 0
+  57 0014 0B4B     		ldr	r3, .L9+4
+  58 0016 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+  59 0018 012B     		cmp	r3, #1
+  60 001a 07D0     		beq	.L4
+  61 001c 13B1     		cbz	r3, .L5
+  62 001e 022B     		cmp	r3, #2
+  63 0020 08D0     		beq	.L6
+  64 0022 F7E7     		b	.L3
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 4
+
+
+  65              	.L5:
+ 108:sources\asw/main.c ****         {
+ 109:sources\asw/main.c ****             case STATE_IDLE:
+ 110:sources\asw/main.c ****                 handleIdleState(&stateMachine);
+  66              		.loc 1 110 0
+  67 0024 0748     		ldr	r0, .L9+4
+  68 0026 FFF7FEFF 		bl	handleIdleState
+  69              	.LVL3:
+ 111:sources\asw/main.c ****                 break;
+  70              		.loc 1 111 0
+  71 002a F3E7     		b	.L3
+  72              	.L4:
+ 112:sources\asw/main.c **** 
+ 113:sources\asw/main.c ****             case STATE_SAMPLING:
+ 114:sources\asw/main.c ****                 handleSamplingState(&stateMachine);
+  73              		.loc 1 114 0
+  74 002c 0548     		ldr	r0, .L9+4
+  75 002e FFF7FEFF 		bl	handleSamplingState
+  76              	.LVL4:
+ 115:sources\asw/main.c ****                 break;
+  77              		.loc 1 115 0
+  78 0032 EFE7     		b	.L3
+  79              	.L6:
+ 116:sources\asw/main.c **** 
+ 117:sources\asw/main.c ****             case STATE_UART_TRANSFER:
+ 118:sources\asw/main.c ****                 handleUARTTransferState(&stateMachine, &cfarParameters);
+  80              		.loc 1 118 0
+  81 0034 0449     		ldr	r1, .L9+8
+  82 0036 0348     		ldr	r0, .L9+4
+  83 0038 FFF7FEFF 		bl	handleUARTTransferState
+  84              	.LVL5:
+ 119:sources\asw/main.c ****                 break;
+  85              		.loc 1 119 0
+  86 003c EAE7     		b	.L3
+  87              	.L10:
+  88 003e 00BF     		.align	2
+  89              	.L9:
+  90 0040 00000000 		.word	ISR_UARTReceive
+  91 0044 00000000 		.word	.LANCHOR0
+  92 0048 00000000 		.word	.LANCHOR1
+  93              		.cfi_endproc
+  94              	.LFE64:
+  95              		.size	main, .-main
+  96              		.global	cfarParameters
+  97              		.global	stateMachine
+  98              		.global	buttonToggle
+  99              		.data
+ 100              		.align	2
+ 101              		.set	.LANCHOR1,. + 0
+ 102              		.type	cfarParameters, %object
+ 103              		.size	cfarParameters, 5140
+ 104              	cfarParameters:
+ 105 0000 00040000 		.word	1024
+ 106 0004 05000000 		.word	5
+ 107 0008 01000000 		.word	1
+ 108 000c BD378635 		.word	897988541
+ 109 0010 00       		.byte	0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 5
+
+
+ 110 0011 00000000 		.space	1023
+ 110      00000000 
+ 110      00000000 
+ 110      00000000 
+ 110      00000000 
+ 111 0410 00000000 		.word	0
+ 112 0414 00000000 		.space	4092
+ 112      00000000 
+ 112      00000000 
+ 112      00000000 
+ 112      00000000 
+ 113 1410 00000000 		.word	0
+ 114              		.bss
+ 115              		.align	2
+ 116              		.set	.LANCHOR0,. + 0
+ 117              		.type	stateMachine, %object
+ 118              		.size	stateMachine, 10248
+ 119              	stateMachine:
+ 120 0000 00000000 		.space	10248
+ 120      00000000 
+ 120      00000000 
+ 120      00000000 
+ 120      00000000 
+ 121              		.type	buttonToggle, %object
+ 122              		.size	buttonToggle, 1
+ 123              	buttonToggle:
+ 124 2808 00       		.space	1
+ 125              		.text
+ 126              	.Letext0:
+ 127              		.file 2 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 128              		.file 3 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 129              		.file 4 "Generated_Source\\PSoC5/cytypes.h"
+ 130              		.file 5 "sources\\asw\\cfar.h"
+ 131              		.file 6 "sources\\asw\\state_machine.h"
+ 132              		.file 7 "Generated_Source\\PSoC5/core_cm3.h"
+ 133              		.file 8 "Generated_Source\\PSoC5/ISR_UART.h"
+ 134              		.file 9 ".\\sources\\bsw/hardware_init.h"
+ 135              		.file 10 "Generated_Source\\PSoC5/User_LED.h"
+ 136              		.section	.debug_info,"",%progbits
+ 137              	.Ldebug_info0:
+ 138 0000 38030000 		.4byte	0x338
+ 139 0004 0400     		.2byte	0x4
+ 140 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 141 000a 04       		.byte	0x4
+ 142 000b 01       		.uleb128 0x1
+ 143 000c C8000000 		.4byte	.LASF48
+ 144 0010 0C       		.byte	0xc
+ 145 0011 32000000 		.4byte	.LASF49
+ 146 0015 AB010000 		.4byte	.LASF50
+ 147 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 148 001d 00000000 		.4byte	0
+ 149 0021 00000000 		.4byte	.Ldebug_line0
+ 150 0025 02       		.uleb128 0x2
+ 151 0026 01       		.byte	0x1
+ 152 0027 06       		.byte	0x6
+ 153 0028 39030000 		.4byte	.LASF0
+ 154 002c 03       		.uleb128 0x3
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 6
+
+
+ 155 002d 00000000 		.4byte	.LASF3
+ 156 0031 02       		.byte	0x2
+ 157 0032 1D       		.byte	0x1d
+ 158 0033 37000000 		.4byte	0x37
+ 159 0037 02       		.uleb128 0x2
+ 160 0038 01       		.byte	0x1
+ 161 0039 08       		.byte	0x8
+ 162 003a BA000000 		.4byte	.LASF1
+ 163 003e 02       		.uleb128 0x2
+ 164 003f 02       		.byte	0x2
+ 165 0040 05       		.byte	0x5
+ 166 0041 3E020000 		.4byte	.LASF2
+ 167 0045 03       		.uleb128 0x3
+ 168 0046 2B020000 		.4byte	.LASF4
+ 169 004a 02       		.byte	0x2
+ 170 004b 2B       		.byte	0x2b
+ 171 004c 50000000 		.4byte	0x50
+ 172 0050 02       		.uleb128 0x2
+ 173 0051 02       		.byte	0x2
+ 174 0052 07       		.byte	0x7
+ 175 0053 5B030000 		.4byte	.LASF5
+ 176 0057 03       		.uleb128 0x3
+ 177 0058 28000000 		.4byte	.LASF6
+ 178 005c 02       		.byte	0x2
+ 179 005d 3F       		.byte	0x3f
+ 180 005e 62000000 		.4byte	0x62
+ 181 0062 02       		.uleb128 0x2
+ 182 0063 04       		.byte	0x4
+ 183 0064 05       		.byte	0x5
+ 184 0065 17030000 		.4byte	.LASF7
+ 185 0069 02       		.uleb128 0x2
+ 186 006a 04       		.byte	0x4
+ 187 006b 07       		.byte	0x7
+ 188 006c 5C020000 		.4byte	.LASF8
+ 189 0070 02       		.uleb128 0x2
+ 190 0071 08       		.byte	0x8
+ 191 0072 05       		.byte	0x5
+ 192 0073 D0020000 		.4byte	.LASF9
+ 193 0077 02       		.uleb128 0x2
+ 194 0078 08       		.byte	0x8
+ 195 0079 07       		.byte	0x7
+ 196 007a 86020000 		.4byte	.LASF10
+ 197 007e 04       		.uleb128 0x4
+ 198 007f 04       		.byte	0x4
+ 199 0080 05       		.byte	0x5
+ 200 0081 696E7400 		.ascii	"int\000"
+ 201 0085 02       		.uleb128 0x2
+ 202 0086 04       		.byte	0x4
+ 203 0087 07       		.byte	0x7
+ 204 0088 6E020000 		.4byte	.LASF11
+ 205 008c 02       		.uleb128 0x2
+ 206 008d 08       		.byte	0x8
+ 207 008e 04       		.byte	0x4
+ 208 008f 20030000 		.4byte	.LASF12
+ 209 0093 02       		.uleb128 0x2
+ 210 0094 04       		.byte	0x4
+ 211 0095 07       		.byte	0x7
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 7
+
+
+ 212 0096 DE020000 		.4byte	.LASF13
+ 213 009a 02       		.uleb128 0x2
+ 214 009b 01       		.byte	0x1
+ 215 009c 08       		.byte	0x8
+ 216 009d E7020000 		.4byte	.LASF14
+ 217 00a1 03       		.uleb128 0x3
+ 218 00a2 C8020000 		.4byte	.LASF15
+ 219 00a6 03       		.byte	0x3
+ 220 00a7 18       		.byte	0x18
+ 221 00a8 2C000000 		.4byte	0x2c
+ 222 00ac 03       		.uleb128 0x3
+ 223 00ad 04030000 		.4byte	.LASF16
+ 224 00b1 03       		.byte	0x3
+ 225 00b2 24       		.byte	0x24
+ 226 00b3 45000000 		.4byte	0x45
+ 227 00b7 03       		.uleb128 0x3
+ 228 00b8 B3020000 		.4byte	.LASF17
+ 229 00bc 03       		.byte	0x3
+ 230 00bd 2C       		.byte	0x2c
+ 231 00be 57000000 		.4byte	0x57
+ 232 00c2 05       		.uleb128 0x5
+ 233 00c3 8D000000 		.4byte	.LASF18
+ 234 00c7 04       		.byte	0x4
+ 235 00c8 E801     		.2byte	0x1e8
+ 236 00ca 37000000 		.4byte	0x37
+ 237 00ce 05       		.uleb128 0x5
+ 238 00cf 84010000 		.4byte	.LASF19
+ 239 00d3 04       		.byte	0x4
+ 240 00d4 ED01     		.2byte	0x1ed
+ 241 00d6 62000000 		.4byte	0x62
+ 242 00da 02       		.uleb128 0x2
+ 243 00db 04       		.byte	0x4
+ 244 00dc 04       		.byte	0x4
+ 245 00dd 87000000 		.4byte	.LASF20
+ 246 00e1 02       		.uleb128 0x2
+ 247 00e2 08       		.byte	0x8
+ 248 00e3 04       		.byte	0x4
+ 249 00e4 AC020000 		.4byte	.LASF21
+ 250 00e8 06       		.uleb128 0x6
+ 251 00e9 A1000000 		.4byte	0xa1
+ 252 00ed 07       		.uleb128 0x7
+ 253 00ee 1414     		.2byte	0x1414
+ 254 00f0 05       		.byte	0x5
+ 255 00f1 0D       		.byte	0xd
+ 256 00f2 49010000 		.4byte	0x149
+ 257 00f6 08       		.uleb128 0x8
+ 258 00f7 4E00     		.ascii	"N\000"
+ 259 00f9 05       		.byte	0x5
+ 260 00fa 0F       		.byte	0xf
+ 261 00fb 7E000000 		.4byte	0x7e
+ 262 00ff 00       		.byte	0
+ 263 0100 08       		.uleb128 0x8
+ 264 0101 4E5200   		.ascii	"NR\000"
+ 265 0104 05       		.byte	0x5
+ 266 0105 10       		.byte	0x10
+ 267 0106 7E000000 		.4byte	0x7e
+ 268 010a 04       		.byte	0x4
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 8
+
+
+ 269 010b 08       		.uleb128 0x8
+ 270 010c 4E4700   		.ascii	"NG\000"
+ 271 010f 05       		.byte	0x5
+ 272 0110 11       		.byte	0x11
+ 273 0111 7E000000 		.4byte	0x7e
+ 274 0115 08       		.byte	0x8
+ 275 0116 08       		.uleb128 0x8
+ 276 0117 50464100 		.ascii	"PFA\000"
+ 277 011b 05       		.byte	0x5
+ 278 011c 12       		.byte	0x12
+ 279 011d DA000000 		.4byte	0xda
+ 280 0121 0C       		.byte	0xc
+ 281 0122 09       		.uleb128 0x9
+ 282 0123 89030000 		.4byte	.LASF22
+ 283 0127 05       		.byte	0x5
+ 284 0128 13       		.byte	0x13
+ 285 0129 49010000 		.4byte	0x149
+ 286 012d 10       		.byte	0x10
+ 287 012e 0A       		.uleb128 0xa
+ 288 012f F8020000 		.4byte	.LASF23
+ 289 0133 05       		.byte	0x5
+ 290 0134 14       		.byte	0x14
+ 291 0135 5A010000 		.4byte	0x15a
+ 292 0139 1004     		.2byte	0x410
+ 293 013b 0A       		.uleb128 0xa
+ 294 013c 68000000 		.4byte	.LASF24
+ 295 0140 05       		.byte	0x5
+ 296 0141 15       		.byte	0x15
+ 297 0142 7E000000 		.4byte	0x7e
+ 298 0146 1014     		.2byte	0x1410
+ 299 0148 00       		.byte	0
+ 300 0149 0B       		.uleb128 0xb
+ 301 014a C2000000 		.4byte	0xc2
+ 302 014e 5A010000 		.4byte	0x15a
+ 303 0152 0C       		.uleb128 0xc
+ 304 0153 93000000 		.4byte	0x93
+ 305 0157 FF03     		.2byte	0x3ff
+ 306 0159 00       		.byte	0
+ 307 015a 0B       		.uleb128 0xb
+ 308 015b DA000000 		.4byte	0xda
+ 309 015f 6B010000 		.4byte	0x16b
+ 310 0163 0C       		.uleb128 0xc
+ 311 0164 93000000 		.4byte	0x93
+ 312 0168 FF03     		.2byte	0x3ff
+ 313 016a 00       		.byte	0
+ 314 016b 03       		.uleb128 0x3
+ 315 016c 45000000 		.4byte	.LASF25
+ 316 0170 05       		.byte	0x5
+ 317 0171 16       		.byte	0x16
+ 318 0172 ED000000 		.4byte	0xed
+ 319 0176 03       		.uleb128 0x3
+ 320 0177 7E030000 		.4byte	.LASF26
+ 321 017b 05       		.byte	0x5
+ 322 017c 18       		.byte	0x18
+ 323 017d 6B010000 		.4byte	0x16b
+ 324 0181 0D       		.uleb128 0xd
+ 325 0182 01       		.byte	0x1
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 9
+
+
+ 326 0183 37000000 		.4byte	0x37
+ 327 0187 06       		.byte	0x6
+ 328 0188 1A       		.byte	0x1a
+ 329 0189 A0010000 		.4byte	0x1a0
+ 330 018d 0E       		.uleb128 0xe
+ 331 018e 56010000 		.4byte	.LASF27
+ 332 0192 00       		.byte	0
+ 333 0193 0E       		.uleb128 0xe
+ 334 0194 9D020000 		.4byte	.LASF28
+ 335 0198 01       		.byte	0x1
+ 336 0199 0E       		.uleb128 0xe
+ 337 019a 70010000 		.4byte	.LASF29
+ 338 019e 02       		.byte	0x2
+ 339 019f 00       		.byte	0
+ 340 01a0 03       		.uleb128 0x3
+ 341 01a1 36020000 		.4byte	.LASF30
+ 342 01a5 06       		.byte	0x6
+ 343 01a6 1E       		.byte	0x1e
+ 344 01a7 81010000 		.4byte	0x181
+ 345 01ab 07       		.uleb128 0x7
+ 346 01ac 0828     		.2byte	0x2808
+ 347 01ae 06       		.byte	0x6
+ 348 01af 21       		.byte	0x21
+ 349 01b0 FF010000 		.4byte	0x1ff
+ 350 01b4 09       		.uleb128 0x9
+ 351 01b5 0A000000 		.4byte	.LASF31
+ 352 01b9 06       		.byte	0x6
+ 353 01ba 23       		.byte	0x23
+ 354 01bb A0010000 		.4byte	0x1a0
+ 355 01bf 00       		.byte	0
+ 356 01c0 09       		.uleb128 0x9
+ 357 01c1 74000000 		.4byte	.LASF32
+ 358 01c5 06       		.byte	0x6
+ 359 01c6 24       		.byte	0x24
+ 360 01c7 A1000000 		.4byte	0xa1
+ 361 01cb 01       		.byte	0x1
+ 362 01cc 09       		.uleb128 0x9
+ 363 01cd 45030000 		.4byte	.LASF33
+ 364 01d1 06       		.byte	0x6
+ 365 01d2 25       		.byte	0x25
+ 366 01d3 A1000000 		.4byte	0xa1
+ 367 01d7 02       		.byte	0x2
+ 368 01d8 09       		.uleb128 0x9
+ 369 01d9 7B020000 		.4byte	.LASF34
+ 370 01dd 06       		.byte	0x6
+ 371 01de 26       		.byte	0x26
+ 372 01df FF010000 		.4byte	0x1ff
+ 373 01e3 04       		.byte	0x4
+ 374 01e4 0A       		.uleb128 0xa
+ 375 01e5 EC020000 		.4byte	.LASF35
+ 376 01e9 06       		.byte	0x6
+ 377 01ea 27       		.byte	0x27
+ 378 01eb A1000000 		.4byte	0xa1
+ 379 01ef 0408     		.2byte	0x804
+ 380 01f1 0A       		.uleb128 0xa
+ 381 01f2 0D030000 		.4byte	.LASF36
+ 382 01f6 06       		.byte	0x6
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 10
+
+
+ 383 01f7 29       		.byte	0x29
+ 384 01f8 10020000 		.4byte	0x210
+ 385 01fc 0808     		.2byte	0x808
+ 386 01fe 00       		.byte	0
+ 387 01ff 0B       		.uleb128 0xb
+ 388 0200 AC000000 		.4byte	0xac
+ 389 0204 10020000 		.4byte	0x210
+ 390 0208 0C       		.uleb128 0xc
+ 391 0209 93000000 		.4byte	0x93
+ 392 020d FF03     		.2byte	0x3ff
+ 393 020f 00       		.byte	0
+ 394 0210 0B       		.uleb128 0xb
+ 395 0211 CE000000 		.4byte	0xce
+ 396 0215 21020000 		.4byte	0x221
+ 397 0219 0C       		.uleb128 0xc
+ 398 021a 93000000 		.4byte	0x93
+ 399 021e FF07     		.2byte	0x7ff
+ 400 0220 00       		.byte	0
+ 401 0221 03       		.uleb128 0x3
+ 402 0222 48020000 		.4byte	.LASF37
+ 403 0226 06       		.byte	0x6
+ 404 0227 2B       		.byte	0x2b
+ 405 0228 AB010000 		.4byte	0x1ab
+ 406 022c 0F       		.uleb128 0xf
+ 407 022d 57020000 		.4byte	.LASF51
+ 408 0231 01       		.byte	0x1
+ 409 0232 59       		.byte	0x59
+ 410 0233 7E000000 		.4byte	0x7e
+ 411 0237 00000000 		.4byte	.LFB64
+ 412 023b 4C000000 		.4byte	.LFE64-.LFB64
+ 413 023f 01       		.uleb128 0x1
+ 414 0240 9C       		.byte	0x9c
+ 415 0241 B5020000 		.4byte	0x2b5
+ 416 0245 10       		.uleb128 0x10
+ 417 0246 0A000000 		.4byte	.LVL0
+ 418 024a F9020000 		.4byte	0x2f9
+ 419 024e 10       		.uleb128 0x10
+ 420 024f 0E000000 		.4byte	.LVL1
+ 421 0253 04030000 		.4byte	0x304
+ 422 0257 11       		.uleb128 0x11
+ 423 0258 14000000 		.4byte	.LVL2
+ 424 025c 0F030000 		.4byte	0x30f
+ 425 0260 6A020000 		.4byte	0x26a
+ 426 0264 12       		.uleb128 0x12
+ 427 0265 01       		.uleb128 0x1
+ 428 0266 50       		.byte	0x50
+ 429 0267 01       		.uleb128 0x1
+ 430 0268 31       		.byte	0x31
+ 431 0269 00       		.byte	0
+ 432 026a 11       		.uleb128 0x11
+ 433 026b 2A000000 		.4byte	.LVL3
+ 434 026f 1A030000 		.4byte	0x31a
+ 435 0273 81020000 		.4byte	0x281
+ 436 0277 12       		.uleb128 0x12
+ 437 0278 01       		.uleb128 0x1
+ 438 0279 50       		.byte	0x50
+ 439 027a 05       		.uleb128 0x5
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 11
+
+
+ 440 027b 03       		.byte	0x3
+ 441 027c 00000000 		.4byte	.LANCHOR0
+ 442 0280 00       		.byte	0
+ 443 0281 11       		.uleb128 0x11
+ 444 0282 32000000 		.4byte	.LVL4
+ 445 0286 25030000 		.4byte	0x325
+ 446 028a 98020000 		.4byte	0x298
+ 447 028e 12       		.uleb128 0x12
+ 448 028f 01       		.uleb128 0x1
+ 449 0290 50       		.byte	0x50
+ 450 0291 05       		.uleb128 0x5
+ 451 0292 03       		.byte	0x3
+ 452 0293 00000000 		.4byte	.LANCHOR0
+ 453 0297 00       		.byte	0
+ 454 0298 13       		.uleb128 0x13
+ 455 0299 3C000000 		.4byte	.LVL5
+ 456 029d 30030000 		.4byte	0x330
+ 457 02a1 12       		.uleb128 0x12
+ 458 02a2 01       		.uleb128 0x1
+ 459 02a3 50       		.byte	0x50
+ 460 02a4 05       		.uleb128 0x5
+ 461 02a5 03       		.byte	0x3
+ 462 02a6 00000000 		.4byte	.LANCHOR0
+ 463 02aa 12       		.uleb128 0x12
+ 464 02ab 01       		.uleb128 0x1
+ 465 02ac 51       		.byte	0x51
+ 466 02ad 05       		.uleb128 0x5
+ 467 02ae 03       		.byte	0x3
+ 468 02af 00000000 		.4byte	.LANCHOR1
+ 469 02b3 00       		.byte	0
+ 470 02b4 00       		.byte	0
+ 471 02b5 14       		.uleb128 0x14
+ 472 02b6 8A010000 		.4byte	.LASF38
+ 473 02ba 07       		.byte	0x7
+ 474 02bb 1207     		.2byte	0x712
+ 475 02bd C1020000 		.4byte	0x2c1
+ 476 02c1 06       		.uleb128 0x6
+ 477 02c2 B7000000 		.4byte	0xb7
+ 478 02c6 15       		.uleb128 0x15
+ 479 02c7 2C030000 		.4byte	.LASF39
+ 480 02cb 01       		.byte	0x1
+ 481 02cc 17       		.byte	0x17
+ 482 02cd E8000000 		.4byte	0xe8
+ 483 02d1 05       		.uleb128 0x5
+ 484 02d2 03       		.byte	0x3
+ 485 02d3 00000000 		.4byte	buttonToggle
+ 486 02d7 15       		.uleb128 0x15
+ 487 02d8 BB020000 		.4byte	.LASF40
+ 488 02dc 01       		.byte	0x1
+ 489 02dd 1F       		.byte	0x1f
+ 490 02de 21020000 		.4byte	0x221
+ 491 02e2 05       		.uleb128 0x5
+ 492 02e3 03       		.byte	0x3
+ 493 02e4 00000000 		.4byte	stateMachine
+ 494 02e8 15       		.uleb128 0x15
+ 495 02e9 AB000000 		.4byte	.LASF41
+ 496 02ed 01       		.byte	0x1
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 12
+
+
+ 497 02ee 37       		.byte	0x37
+ 498 02ef 76010000 		.4byte	0x176
+ 499 02f3 05       		.uleb128 0x5
+ 500 02f4 03       		.byte	0x3
+ 501 02f5 00000000 		.4byte	cfarParameters
+ 502 02f9 16       		.uleb128 0x16
+ 503 02fa 17000000 		.4byte	.LASF42
+ 504 02fe 17000000 		.4byte	.LASF42
+ 505 0302 08       		.byte	0x8
+ 506 0303 18       		.byte	0x18
+ 507 0304 16       		.uleb128 0x16
+ 508 0305 55000000 		.4byte	.LASF43
+ 509 0309 55000000 		.4byte	.LASF43
+ 510 030d 09       		.byte	0x9
+ 511 030e 13       		.byte	0x13
+ 512 030f 16       		.uleb128 0x16
+ 513 0310 61010000 		.4byte	.LASF44
+ 514 0314 61010000 		.4byte	.LASF44
+ 515 0318 0A       		.byte	0xa
+ 516 0319 26       		.byte	0x26
+ 517 031a 16       		.uleb128 0x16
+ 518 031b 6E030000 		.4byte	.LASF45
+ 519 031f 6E030000 		.4byte	.LASF45
+ 520 0323 06       		.byte	0x6
+ 521 0324 3F       		.byte	0x3f
+ 522 0325 16       		.uleb128 0x16
+ 523 0326 97010000 		.4byte	.LASF46
+ 524 032a 97010000 		.4byte	.LASF46
+ 525 032e 06       		.byte	0x6
+ 526 032f 54       		.byte	0x54
+ 527 0330 16       		.uleb128 0x16
+ 528 0331 93000000 		.4byte	.LASF47
+ 529 0335 93000000 		.4byte	.LASF47
+ 530 0339 06       		.byte	0x6
+ 531 033a 6D       		.byte	0x6d
+ 532 033b 00       		.byte	0
+ 533              		.section	.debug_abbrev,"",%progbits
+ 534              	.Ldebug_abbrev0:
+ 535 0000 01       		.uleb128 0x1
+ 536 0001 11       		.uleb128 0x11
+ 537 0002 01       		.byte	0x1
+ 538 0003 25       		.uleb128 0x25
+ 539 0004 0E       		.uleb128 0xe
+ 540 0005 13       		.uleb128 0x13
+ 541 0006 0B       		.uleb128 0xb
+ 542 0007 03       		.uleb128 0x3
+ 543 0008 0E       		.uleb128 0xe
+ 544 0009 1B       		.uleb128 0x1b
+ 545 000a 0E       		.uleb128 0xe
+ 546 000b 55       		.uleb128 0x55
+ 547 000c 17       		.uleb128 0x17
+ 548 000d 11       		.uleb128 0x11
+ 549 000e 01       		.uleb128 0x1
+ 550 000f 10       		.uleb128 0x10
+ 551 0010 17       		.uleb128 0x17
+ 552 0011 00       		.byte	0
+ 553 0012 00       		.byte	0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 13
+
+
+ 554 0013 02       		.uleb128 0x2
+ 555 0014 24       		.uleb128 0x24
+ 556 0015 00       		.byte	0
+ 557 0016 0B       		.uleb128 0xb
+ 558 0017 0B       		.uleb128 0xb
+ 559 0018 3E       		.uleb128 0x3e
+ 560 0019 0B       		.uleb128 0xb
+ 561 001a 03       		.uleb128 0x3
+ 562 001b 0E       		.uleb128 0xe
+ 563 001c 00       		.byte	0
+ 564 001d 00       		.byte	0
+ 565 001e 03       		.uleb128 0x3
+ 566 001f 16       		.uleb128 0x16
+ 567 0020 00       		.byte	0
+ 568 0021 03       		.uleb128 0x3
+ 569 0022 0E       		.uleb128 0xe
+ 570 0023 3A       		.uleb128 0x3a
+ 571 0024 0B       		.uleb128 0xb
+ 572 0025 3B       		.uleb128 0x3b
+ 573 0026 0B       		.uleb128 0xb
+ 574 0027 49       		.uleb128 0x49
+ 575 0028 13       		.uleb128 0x13
+ 576 0029 00       		.byte	0
+ 577 002a 00       		.byte	0
+ 578 002b 04       		.uleb128 0x4
+ 579 002c 24       		.uleb128 0x24
+ 580 002d 00       		.byte	0
+ 581 002e 0B       		.uleb128 0xb
+ 582 002f 0B       		.uleb128 0xb
+ 583 0030 3E       		.uleb128 0x3e
+ 584 0031 0B       		.uleb128 0xb
+ 585 0032 03       		.uleb128 0x3
+ 586 0033 08       		.uleb128 0x8
+ 587 0034 00       		.byte	0
+ 588 0035 00       		.byte	0
+ 589 0036 05       		.uleb128 0x5
+ 590 0037 16       		.uleb128 0x16
+ 591 0038 00       		.byte	0
+ 592 0039 03       		.uleb128 0x3
+ 593 003a 0E       		.uleb128 0xe
+ 594 003b 3A       		.uleb128 0x3a
+ 595 003c 0B       		.uleb128 0xb
+ 596 003d 3B       		.uleb128 0x3b
+ 597 003e 05       		.uleb128 0x5
+ 598 003f 49       		.uleb128 0x49
+ 599 0040 13       		.uleb128 0x13
+ 600 0041 00       		.byte	0
+ 601 0042 00       		.byte	0
+ 602 0043 06       		.uleb128 0x6
+ 603 0044 35       		.uleb128 0x35
+ 604 0045 00       		.byte	0
+ 605 0046 49       		.uleb128 0x49
+ 606 0047 13       		.uleb128 0x13
+ 607 0048 00       		.byte	0
+ 608 0049 00       		.byte	0
+ 609 004a 07       		.uleb128 0x7
+ 610 004b 13       		.uleb128 0x13
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 14
+
+
+ 611 004c 01       		.byte	0x1
+ 612 004d 0B       		.uleb128 0xb
+ 613 004e 05       		.uleb128 0x5
+ 614 004f 3A       		.uleb128 0x3a
+ 615 0050 0B       		.uleb128 0xb
+ 616 0051 3B       		.uleb128 0x3b
+ 617 0052 0B       		.uleb128 0xb
+ 618 0053 01       		.uleb128 0x1
+ 619 0054 13       		.uleb128 0x13
+ 620 0055 00       		.byte	0
+ 621 0056 00       		.byte	0
+ 622 0057 08       		.uleb128 0x8
+ 623 0058 0D       		.uleb128 0xd
+ 624 0059 00       		.byte	0
+ 625 005a 03       		.uleb128 0x3
+ 626 005b 08       		.uleb128 0x8
+ 627 005c 3A       		.uleb128 0x3a
+ 628 005d 0B       		.uleb128 0xb
+ 629 005e 3B       		.uleb128 0x3b
+ 630 005f 0B       		.uleb128 0xb
+ 631 0060 49       		.uleb128 0x49
+ 632 0061 13       		.uleb128 0x13
+ 633 0062 38       		.uleb128 0x38
+ 634 0063 0B       		.uleb128 0xb
+ 635 0064 00       		.byte	0
+ 636 0065 00       		.byte	0
+ 637 0066 09       		.uleb128 0x9
+ 638 0067 0D       		.uleb128 0xd
+ 639 0068 00       		.byte	0
+ 640 0069 03       		.uleb128 0x3
+ 641 006a 0E       		.uleb128 0xe
+ 642 006b 3A       		.uleb128 0x3a
+ 643 006c 0B       		.uleb128 0xb
+ 644 006d 3B       		.uleb128 0x3b
+ 645 006e 0B       		.uleb128 0xb
+ 646 006f 49       		.uleb128 0x49
+ 647 0070 13       		.uleb128 0x13
+ 648 0071 38       		.uleb128 0x38
+ 649 0072 0B       		.uleb128 0xb
+ 650 0073 00       		.byte	0
+ 651 0074 00       		.byte	0
+ 652 0075 0A       		.uleb128 0xa
+ 653 0076 0D       		.uleb128 0xd
+ 654 0077 00       		.byte	0
+ 655 0078 03       		.uleb128 0x3
+ 656 0079 0E       		.uleb128 0xe
+ 657 007a 3A       		.uleb128 0x3a
+ 658 007b 0B       		.uleb128 0xb
+ 659 007c 3B       		.uleb128 0x3b
+ 660 007d 0B       		.uleb128 0xb
+ 661 007e 49       		.uleb128 0x49
+ 662 007f 13       		.uleb128 0x13
+ 663 0080 38       		.uleb128 0x38
+ 664 0081 05       		.uleb128 0x5
+ 665 0082 00       		.byte	0
+ 666 0083 00       		.byte	0
+ 667 0084 0B       		.uleb128 0xb
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 15
+
+
+ 668 0085 01       		.uleb128 0x1
+ 669 0086 01       		.byte	0x1
+ 670 0087 49       		.uleb128 0x49
+ 671 0088 13       		.uleb128 0x13
+ 672 0089 01       		.uleb128 0x1
+ 673 008a 13       		.uleb128 0x13
+ 674 008b 00       		.byte	0
+ 675 008c 00       		.byte	0
+ 676 008d 0C       		.uleb128 0xc
+ 677 008e 21       		.uleb128 0x21
+ 678 008f 00       		.byte	0
+ 679 0090 49       		.uleb128 0x49
+ 680 0091 13       		.uleb128 0x13
+ 681 0092 2F       		.uleb128 0x2f
+ 682 0093 05       		.uleb128 0x5
+ 683 0094 00       		.byte	0
+ 684 0095 00       		.byte	0
+ 685 0096 0D       		.uleb128 0xd
+ 686 0097 04       		.uleb128 0x4
+ 687 0098 01       		.byte	0x1
+ 688 0099 0B       		.uleb128 0xb
+ 689 009a 0B       		.uleb128 0xb
+ 690 009b 49       		.uleb128 0x49
+ 691 009c 13       		.uleb128 0x13
+ 692 009d 3A       		.uleb128 0x3a
+ 693 009e 0B       		.uleb128 0xb
+ 694 009f 3B       		.uleb128 0x3b
+ 695 00a0 0B       		.uleb128 0xb
+ 696 00a1 01       		.uleb128 0x1
+ 697 00a2 13       		.uleb128 0x13
+ 698 00a3 00       		.byte	0
+ 699 00a4 00       		.byte	0
+ 700 00a5 0E       		.uleb128 0xe
+ 701 00a6 28       		.uleb128 0x28
+ 702 00a7 00       		.byte	0
+ 703 00a8 03       		.uleb128 0x3
+ 704 00a9 0E       		.uleb128 0xe
+ 705 00aa 1C       		.uleb128 0x1c
+ 706 00ab 0B       		.uleb128 0xb
+ 707 00ac 00       		.byte	0
+ 708 00ad 00       		.byte	0
+ 709 00ae 0F       		.uleb128 0xf
+ 710 00af 2E       		.uleb128 0x2e
+ 711 00b0 01       		.byte	0x1
+ 712 00b1 3F       		.uleb128 0x3f
+ 713 00b2 19       		.uleb128 0x19
+ 714 00b3 03       		.uleb128 0x3
+ 715 00b4 0E       		.uleb128 0xe
+ 716 00b5 3A       		.uleb128 0x3a
+ 717 00b6 0B       		.uleb128 0xb
+ 718 00b7 3B       		.uleb128 0x3b
+ 719 00b8 0B       		.uleb128 0xb
+ 720 00b9 27       		.uleb128 0x27
+ 721 00ba 19       		.uleb128 0x19
+ 722 00bb 49       		.uleb128 0x49
+ 723 00bc 13       		.uleb128 0x13
+ 724 00bd 8701     		.uleb128 0x87
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 16
+
+
+ 725 00bf 19       		.uleb128 0x19
+ 726 00c0 11       		.uleb128 0x11
+ 727 00c1 01       		.uleb128 0x1
+ 728 00c2 12       		.uleb128 0x12
+ 729 00c3 06       		.uleb128 0x6
+ 730 00c4 40       		.uleb128 0x40
+ 731 00c5 18       		.uleb128 0x18
+ 732 00c6 9742     		.uleb128 0x2117
+ 733 00c8 19       		.uleb128 0x19
+ 734 00c9 01       		.uleb128 0x1
+ 735 00ca 13       		.uleb128 0x13
+ 736 00cb 00       		.byte	0
+ 737 00cc 00       		.byte	0
+ 738 00cd 10       		.uleb128 0x10
+ 739 00ce 898201   		.uleb128 0x4109
+ 740 00d1 00       		.byte	0
+ 741 00d2 11       		.uleb128 0x11
+ 742 00d3 01       		.uleb128 0x1
+ 743 00d4 31       		.uleb128 0x31
+ 744 00d5 13       		.uleb128 0x13
+ 745 00d6 00       		.byte	0
+ 746 00d7 00       		.byte	0
+ 747 00d8 11       		.uleb128 0x11
+ 748 00d9 898201   		.uleb128 0x4109
+ 749 00dc 01       		.byte	0x1
+ 750 00dd 11       		.uleb128 0x11
+ 751 00de 01       		.uleb128 0x1
+ 752 00df 31       		.uleb128 0x31
+ 753 00e0 13       		.uleb128 0x13
+ 754 00e1 01       		.uleb128 0x1
+ 755 00e2 13       		.uleb128 0x13
+ 756 00e3 00       		.byte	0
+ 757 00e4 00       		.byte	0
+ 758 00e5 12       		.uleb128 0x12
+ 759 00e6 8A8201   		.uleb128 0x410a
+ 760 00e9 00       		.byte	0
+ 761 00ea 02       		.uleb128 0x2
+ 762 00eb 18       		.uleb128 0x18
+ 763 00ec 9142     		.uleb128 0x2111
+ 764 00ee 18       		.uleb128 0x18
+ 765 00ef 00       		.byte	0
+ 766 00f0 00       		.byte	0
+ 767 00f1 13       		.uleb128 0x13
+ 768 00f2 898201   		.uleb128 0x4109
+ 769 00f5 01       		.byte	0x1
+ 770 00f6 11       		.uleb128 0x11
+ 771 00f7 01       		.uleb128 0x1
+ 772 00f8 31       		.uleb128 0x31
+ 773 00f9 13       		.uleb128 0x13
+ 774 00fa 00       		.byte	0
+ 775 00fb 00       		.byte	0
+ 776 00fc 14       		.uleb128 0x14
+ 777 00fd 34       		.uleb128 0x34
+ 778 00fe 00       		.byte	0
+ 779 00ff 03       		.uleb128 0x3
+ 780 0100 0E       		.uleb128 0xe
+ 781 0101 3A       		.uleb128 0x3a
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 17
+
+
+ 782 0102 0B       		.uleb128 0xb
+ 783 0103 3B       		.uleb128 0x3b
+ 784 0104 05       		.uleb128 0x5
+ 785 0105 49       		.uleb128 0x49
+ 786 0106 13       		.uleb128 0x13
+ 787 0107 3F       		.uleb128 0x3f
+ 788 0108 19       		.uleb128 0x19
+ 789 0109 3C       		.uleb128 0x3c
+ 790 010a 19       		.uleb128 0x19
+ 791 010b 00       		.byte	0
+ 792 010c 00       		.byte	0
+ 793 010d 15       		.uleb128 0x15
+ 794 010e 34       		.uleb128 0x34
+ 795 010f 00       		.byte	0
+ 796 0110 03       		.uleb128 0x3
+ 797 0111 0E       		.uleb128 0xe
+ 798 0112 3A       		.uleb128 0x3a
+ 799 0113 0B       		.uleb128 0xb
+ 800 0114 3B       		.uleb128 0x3b
+ 801 0115 0B       		.uleb128 0xb
+ 802 0116 49       		.uleb128 0x49
+ 803 0117 13       		.uleb128 0x13
+ 804 0118 3F       		.uleb128 0x3f
+ 805 0119 19       		.uleb128 0x19
+ 806 011a 02       		.uleb128 0x2
+ 807 011b 18       		.uleb128 0x18
+ 808 011c 00       		.byte	0
+ 809 011d 00       		.byte	0
+ 810 011e 16       		.uleb128 0x16
+ 811 011f 2E       		.uleb128 0x2e
+ 812 0120 00       		.byte	0
+ 813 0121 3F       		.uleb128 0x3f
+ 814 0122 19       		.uleb128 0x19
+ 815 0123 3C       		.uleb128 0x3c
+ 816 0124 19       		.uleb128 0x19
+ 817 0125 6E       		.uleb128 0x6e
+ 818 0126 0E       		.uleb128 0xe
+ 819 0127 03       		.uleb128 0x3
+ 820 0128 0E       		.uleb128 0xe
+ 821 0129 3A       		.uleb128 0x3a
+ 822 012a 0B       		.uleb128 0xb
+ 823 012b 3B       		.uleb128 0x3b
+ 824 012c 0B       		.uleb128 0xb
+ 825 012d 00       		.byte	0
+ 826 012e 00       		.byte	0
+ 827 012f 00       		.byte	0
+ 828              		.section	.debug_aranges,"",%progbits
+ 829 0000 1C000000 		.4byte	0x1c
+ 830 0004 0200     		.2byte	0x2
+ 831 0006 00000000 		.4byte	.Ldebug_info0
+ 832 000a 04       		.byte	0x4
+ 833 000b 00       		.byte	0
+ 834 000c 0000     		.2byte	0
+ 835 000e 0000     		.2byte	0
+ 836 0010 00000000 		.4byte	.LFB64
+ 837 0014 4C000000 		.4byte	.LFE64-.LFB64
+ 838 0018 00000000 		.4byte	0
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 18
+
+
+ 839 001c 00000000 		.4byte	0
+ 840              		.section	.debug_ranges,"",%progbits
+ 841              	.Ldebug_ranges0:
+ 842 0000 00000000 		.4byte	.LFB64
+ 843 0004 4C000000 		.4byte	.LFE64
+ 844 0008 00000000 		.4byte	0
+ 845 000c 00000000 		.4byte	0
+ 846              		.section	.debug_line,"",%progbits
+ 847              	.Ldebug_line0:
+ 848 0000 D3010000 		.section	.debug_str,"MS",%progbits,1
+ 848      0200B201 
+ 848      00000201 
+ 848      FB0E0D00 
+ 848      01010101 
+ 849              	.LASF3:
+ 850 0000 5F5F7569 		.ascii	"__uint8_t\000"
+ 850      6E74385F 
+ 850      7400
+ 851              	.LASF31:
+ 852 000a 63757272 		.ascii	"currentState\000"
+ 852      656E7453 
+ 852      74617465 
+ 852      00
+ 853              	.LASF42:
+ 854 0017 4953525F 		.ascii	"ISR_UART_StartEx\000"
+ 854      55415254 
+ 854      5F537461 
+ 854      72744578 
+ 854      00
+ 855              	.LASF6:
+ 856 0028 5F5F696E 		.ascii	"__int32_t\000"
+ 856      7433325F 
+ 856      7400
+ 857              	.LASF49:
+ 858 0032 736F7572 		.ascii	"sources\\asw\\main.c\000"
+ 858      6365735C 
+ 858      6173775C 
+ 858      6D61696E 
+ 858      2E6300
+ 859              	.LASF25:
+ 860 0045 4646545F 		.ascii	"FFT_Cfar_Params\000"
+ 860      43666172 
+ 860      5F506172 
+ 860      616D7300 
+ 861              	.LASF43:
+ 862 0055 696E6974 		.ascii	"initializeHardware\000"
+ 862      69616C69 
+ 862      7A654861 
+ 862      72647761 
+ 862      726500
+ 863              	.LASF24:
+ 864 0068 43464152 		.ascii	"CFAR_filled\000"
+ 864      5F66696C 
+ 864      6C656400 
+ 865              	.LASF32:
+ 866 0074 73746172 		.ascii	"startSampleCommand\000"
+ 866      7453616D 
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 19
+
+
+ 866      706C6543 
+ 866      6F6D6D61 
+ 866      6E6400
+ 867              	.LASF20:
+ 868 0087 666C6F61 		.ascii	"float\000"
+ 868      7400
+ 869              	.LASF18:
+ 870 008d 75696E74 		.ascii	"uint8\000"
+ 870      3800
+ 871              	.LASF47:
+ 872 0093 68616E64 		.ascii	"handleUARTTransferState\000"
+ 872      6C655541 
+ 872      52545472 
+ 872      616E7366 
+ 872      65725374 
+ 873              	.LASF41:
+ 874 00ab 63666172 		.ascii	"cfarParameters\000"
+ 874      50617261 
+ 874      6D657465 
+ 874      727300
+ 875              	.LASF1:
+ 876 00ba 756E7369 		.ascii	"unsigned char\000"
+ 876      676E6564 
+ 876      20636861 
+ 876      7200
+ 877              	.LASF48:
+ 878 00c8 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 878      43313120 
+ 878      352E342E 
+ 878      31203230 
+ 878      31363036 
+ 879 00fb 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 879      20726576 
+ 879      6973696F 
+ 879      6E203233 
+ 879      37373135 
+ 880 012e 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 880      66756E63 
+ 880      74696F6E 
+ 880      2D736563 
+ 880      74696F6E 
+ 881              	.LASF27:
+ 882 0156 53544154 		.ascii	"STATE_IDLE\000"
+ 882      455F4944 
+ 882      4C4500
+ 883              	.LASF44:
+ 884 0161 55736572 		.ascii	"User_LED_Write\000"
+ 884      5F4C4544 
+ 884      5F577269 
+ 884      746500
+ 885              	.LASF29:
+ 886 0170 53544154 		.ascii	"STATE_UART_TRANSFER\000"
+ 886      455F5541 
+ 886      52545F54 
+ 886      52414E53 
+ 886      46455200 
+ 887              	.LASF19:
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 20
+
+
+ 888 0184 696E7433 		.ascii	"int32\000"
+ 888      3200
+ 889              	.LASF38:
+ 890 018a 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 890      52784275 
+ 890      66666572 
+ 890      00
+ 891              	.LASF46:
+ 892 0197 68616E64 		.ascii	"handleSamplingState\000"
+ 892      6C655361 
+ 892      6D706C69 
+ 892      6E675374 
+ 892      61746500 
+ 893              	.LASF50:
+ 894 01ab 453A5C48 		.ascii	"E:\\HDA_Lectures\\001_Repository\\012_SDHD\\012_SDH"
+ 894      44415F4C 
+ 894      65637475 
+ 894      7265735C 
+ 894      3030315F 
+ 895 01da 445F4C61 		.ascii	"D_LabCodes\\Lab\\40_Implementation\\20_SW\\10_work\\"
+ 895      62436F64 
+ 895      65735C4C 
+ 895      61625C34 
+ 895      305F496D 
+ 896 0209 53444844 		.ascii	"SDHD_WP1\\D5-RADAR_Detection.cydsn\000"
+ 896      5F575031 
+ 896      5C44352D 
+ 896      52414441 
+ 896      525F4465 
+ 897              	.LASF4:
+ 898 022b 5F5F7569 		.ascii	"__uint16_t\000"
+ 898      6E743136 
+ 898      5F7400
+ 899              	.LASF30:
+ 900 0236 53746174 		.ascii	"State_t\000"
+ 900      655F7400 
+ 901              	.LASF2:
+ 902 023e 73686F72 		.ascii	"short int\000"
+ 902      7420696E 
+ 902      7400
+ 903              	.LASF37:
+ 904 0248 53746174 		.ascii	"StateMachine_t\000"
+ 904      654D6163 
+ 904      68696E65 
+ 904      5F7400
+ 905              	.LASF51:
+ 906 0257 6D61696E 		.ascii	"main\000"
+ 906      00
+ 907              	.LASF8:
+ 908 025c 6C6F6E67 		.ascii	"long unsigned int\000"
+ 908      20756E73 
+ 908      69676E65 
+ 908      6420696E 
+ 908      7400
+ 909              	.LASF11:
+ 910 026e 756E7369 		.ascii	"unsigned int\000"
+ 910      676E6564 
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 21
+
+
+ 910      20696E74 
+ 910      00
+ 911              	.LASF34:
+ 912 027b 61646352 		.ascii	"adcResults\000"
+ 912      6573756C 
+ 912      747300
+ 913              	.LASF10:
+ 914 0286 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 914      206C6F6E 
+ 914      6720756E 
+ 914      7369676E 
+ 914      65642069 
+ 915              	.LASF28:
+ 916 029d 53544154 		.ascii	"STATE_SAMPLING\000"
+ 916      455F5341 
+ 916      4D504C49 
+ 916      4E4700
+ 917              	.LASF21:
+ 918 02ac 646F7562 		.ascii	"double\000"
+ 918      6C6500
+ 919              	.LASF17:
+ 920 02b3 696E7433 		.ascii	"int32_t\000"
+ 920      325F7400 
+ 921              	.LASF40:
+ 922 02bb 73746174 		.ascii	"stateMachine\000"
+ 922      654D6163 
+ 922      68696E65 
+ 922      00
+ 923              	.LASF15:
+ 924 02c8 75696E74 		.ascii	"uint8_t\000"
+ 924      385F7400 
+ 925              	.LASF9:
+ 926 02d0 6C6F6E67 		.ascii	"long long int\000"
+ 926      206C6F6E 
+ 926      6720696E 
+ 926      7400
+ 927              	.LASF13:
+ 928 02de 73697A65 		.ascii	"sizetype\000"
+ 928      74797065 
+ 928      00
+ 929              	.LASF14:
+ 930 02e7 63686172 		.ascii	"char\000"
+ 930      00
+ 931              	.LASF35:
+ 932 02ec 73616D70 		.ascii	"sampleCount\000"
+ 932      6C65436F 
+ 932      756E7400 
+ 933              	.LASF23:
+ 934 02f8 74687265 		.ascii	"threshold_m\000"
+ 934      73686F6C 
+ 934      645F6D00 
+ 935              	.LASF16:
+ 936 0304 75696E74 		.ascii	"uint16_t\000"
+ 936      31365F74 
+ 936      00
+ 937              	.LASF36:
+ 938 030d 4646545F 		.ascii	"FFT_Array\000"
+ARM GAS  C:\Users\HP\AppData\Local\Temp\ccOvnfMU.s 			page 22
+
+
+ 938      41727261 
+ 938      7900
+ 939              	.LASF7:
+ 940 0317 6C6F6E67 		.ascii	"long int\000"
+ 940      20696E74 
+ 940      00
+ 941              	.LASF12:
+ 942 0320 6C6F6E67 		.ascii	"long double\000"
+ 942      20646F75 
+ 942      626C6500 
+ 943              	.LASF39:
+ 944 032c 62757474 		.ascii	"buttonToggle\000"
+ 944      6F6E546F 
+ 944      67676C65 
+ 944      00
+ 945              	.LASF0:
+ 946 0339 7369676E 		.ascii	"signed char\000"
+ 946      65642063 
+ 946      68617200 
+ 947              	.LASF33:
+ 948 0345 636F6E74 		.ascii	"continueSampleCommand\000"
+ 948      696E7565 
+ 948      53616D70 
+ 948      6C65436F 
+ 948      6D6D616E 
+ 949              	.LASF5:
+ 950 035b 73686F72 		.ascii	"short unsigned int\000"
+ 950      7420756E 
+ 950      7369676E 
+ 950      65642069 
+ 950      6E7400
+ 951              	.LASF45:
+ 952 036e 68616E64 		.ascii	"handleIdleState\000"
+ 952      6C654964 
+ 952      6C655374 
+ 952      61746500 
+ 953              	.LASF26:
+ 954 037e 4646545F 		.ascii	"FFT_CFAR_t\000"
+ 954      43464152 
+ 954      5F7400
+ 955              	.LASF22:
+ 956 0389 64657465 		.ascii	"detections\000"
+ 956      6374696F 
+ 956      6E7300
+ 957              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran
