@@ -1,0 +1,53 @@
+22.04.24, Group
+Project : 24Ghz Radar : Movement detection using IPM-165 Radar Module
+------------------------------------------------------------------------
+
+Version:    R0.1
+Date:       22.04.24
+------------------------------------------------------------------------
+1. Initial schematic of 4th order Bandpass filter.
+2. Calculations for the components used.
+
+Version:    R0.2
+Date:       24.04.24
+------------------------------------------------------------------------
+1. Schematic design updated for power led as per review.
+2. Added additional pull-up resistor for switch (optional).
+3. Added additional GND test points.
+
+Version:    R0.3
+Date:       28.04.24
+------------------------------------------------------------------------
+1. Updated the footprints for the capacitors.
+2. Initial PCB layout.
+
+Version:    R0.4
+Date:       5.05.24
+------------------------------------------------------------------------
+1. Updated the PCB layput with all 4 layers.
+
+Version:    R0.5
+Date:       11.05.24
+------------------------------------------------------------------------
+1. Updated the layout routing from 90 deg to 45 deg corners
+2. Footprints of resistors updated with suffix "k"
+
+Version:    R1.0            [Released Version - 240515_D5-24Ghz_RADAR-Movement-Detection_100]
+Date:       14.05.24
+------------------------------------------------------------------------
+1. Updated the version history, generated the Gerber files
+
+Version:    R1.1
+Date:       20.05.24
+------------------------------------------------------------------------
+1. Updated the schematic and layout as per review comments
+
+Version:    R2.0            [Released Version - 240526_D5-24Ghz_RADAR-Movement-Detection_200]
+Date:       26.05.24
+------------------------------------------------------------------------
+1. Changed the sequence of layers to Front-Gnd-Vcc-Back
+2. Changed track width of signals to 30mm
+3. Updated the version history, generated the Gerber files for production
+
+Note: 240526-D5-Production is used for Elekonta Production. 
+D5_Gerber, D5_Project are for Production purposes
